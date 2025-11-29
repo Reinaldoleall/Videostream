@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Video Cast</title>
+    <!-- Bibliotecas Necessárias -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --bg: #1e1e2e;
+            --surface: #2d2d42;
+            --text: #dfe6e9;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- TELA DE SELEÇÃO DE MODO --- */
+        #mode-selection {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .mode-btn {
+            background: var(--surface);
+            border: 2px solid var(--primary);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 80%;
+            max-width: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.2s;
+        }
+
+        .mode-btn:active { transform: scale(0.95); }
+        .mode-btn i { font-size: 1.5rem; }
+
+        /* --- INTERFACE DO HOST (TV/PC) --- */
+        #host-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .video-container {
+            flex: 1;
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            max-height: 100vh;
+        }
+
+        .waiting-screen {
+            position: absolute;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--primary);
+        }
+
+        #qrcode { margin: 20px auto; background: white; padding: 10px; border-radius: 10px; width: fit-content;}
+        .connection-id { font-size: 2rem; color: var(--primary); font-weight: bold; letter-spacing: 5px; margin: 10px 0; }
+
+        /* --- INTERFACE DO REMOTE (CELULAR) --- */
+        #remote-view {
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            height: 100%;
+            background: var(--bg);
+        }
+
+        .remote-header { text-align: center; margin-bottom: 30px; }
+        
+        .input-group {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            border: none;
+            background: #1a1a2e;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .action-btn:disabled { background: gray; cursor: not-allowed; }
+
+        #file-input { display: none; }
+        
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            border: 2px dashed var(--secondary);
+            padding: 40px;
+            border-radius: 15px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            background: #1a1a2e;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.2s;
+        }
+
+        .status-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #bdc3c7;
+        }
+
+        /* Controles Remotos */
+        .remote-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: auto;
+        }
+        
+        .control-btn {
+            background: var(--surface);
+            border: none;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .control-btn:active { background: var(--primary); }
+
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE SELEÇÃO -->
+    <div id="mode-selection">
+        <h1>P2P Video Cast</h1>
+        <p>Escolha o modo deste dispositivo</p>
+        
+        <button class="mode-btn" onclick="startHost()">
+            <i class="fas fa-tv"></i> Receber (TV/PC)
+        </button>
+        
+        <button class="mode-btn" onclick="startRemote()">
+            <i class="fas fa-mobile-alt"></i> Transmitir (Celular)
+        </button>
+    </div>
+
+    <!-- TELA DO HOST (TV) -->
+    <div id="host-view">
+        <div class="video-container">
+            <video id="main-video" controls></video>
+            
+            <div class="waiting-screen" id="waiting-screen">
+                <h2>Aguardando Conexão...</h2>
+                <p>No seu celular, digite o código abaixo:</p>
+                <div class="connection-id" id="display-id">...</div>
+                <div id="qrcode"></div>
+                <p><small>O vídeo será transmitido diretamente do celular.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DO REMOTE (CELULAR) -->
+    <div id="remote-view">
+        <div class="remote-header">
+            <h2>Controle Remoto</h2>
+        </div>
+
+        <!-- Passo 1: Conectar -->
+        <div class="input-group" id="connect-group">
+            <label>Código da TV:</label>
+            <input type="text" id="remote-id-input" placeholder="Ex: ABCD" maxlength="4">
+            <button class="action-btn" onclick="connectToPeer()">Conectar</button>
+        </div>
+
+        <!-- Passo 2: Selecionar Arquivo -->
+        <div id="upload-group" style="display: none;">
+            <div class="status-text" style="color: #00b894; margin-bottom: 10px;">
+                <i class="fas fa-link"></i> Conectado à TV!
+            </div>
+
+            <label for="file-input" class="file-label">
+                <i class="fas fa-film" style="font-size: 3rem; margin-bottom: 10px;"></i>
+                <span>Toque para escolher um vídeo</span>
+                <small style="opacity: 0.7; margin-top:5px;">(Pode ser da galeria)</small>
+            </label>
+            <input type="file" id="file-input" accept="video/*">
+            
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="status-text" id="transfer-status"></div>
+
+            <!-- Controles de Playback -->
+            <div class="remote-controls" style="margin-top: 30px;">
+                <button class="control-btn" onclick="sendCommand('play')"><i class="fas fa-play"></i></button>
+                <button class="control-btn" onclick="sendCommand('pause')"><i class="fas fa-pause"></i></button>
+                <button class="control-btn" onclick="sendCommand('vol-down')"><i class="fas fa-volume-down"></i></button>
+                <button class="control-btn" onclick="sendCommand('vol-up')"><i class="fas fa-volume-up"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- VARIÁVEIS GLOBAIS ---
+        let peer = null;
+        let conn = null;
+        let myId = null;
+        const CHUNK_SIZE = 16 * 1024; // 16KB por chunk (seguro para WebRTC)
+
+        // Elementos UI
+        const modeSelection = document.getElementById('mode-selection');
+        const hostView = document.getElementById('host-view');
+        const remoteView = document.getElementById('remote-view');
+        
+        // --- FUNÇÕES DE INICIALIZAÇÃO ---
+
+        function generateShortId() {
+            // Gera um ID de 4 letras aleatórias
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for ( let i = 0; i < 4; i++ ) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // --- LÓGICA DO HOST (TV) ---
+        function startHost() {
+            modeSelection.style.display = 'none';
+            hostView.style.display = 'flex';
+            
+            const shortId = generateShortId();
+            document.getElementById('display-id').textContent = shortId;
+
+            // Gera QR Code
+            new QRCode(document.getElementById("qrcode"), {
+                text: window.location.href, // Em produção, poderia passar o ID na URL
+                width: 128,
+                height: 128
+            });
+
+            // Inicializa PeerJS
+            peer = new Peer(shortId);
+
+            peer.on('open', (id) => {
+                console.log('Host ID:', id);
+            });
+
+            peer.on('connection', (c) => {
+                console.log('Conexão recebida!');
+                conn = c;
+                setupHostConnection();
+            });
+        }
+
+        function setupHostConnection() {
+            // Esconde a tela de espera
+            document.getElementById('waiting-screen').style.display = 'none';
+            
+            const videoElement = document.getElementById('main-video');
+            let receivedBuffers = [];
+            let receivedBytes = 0;
+            let totalBytes = 0;
+            let fileType = '';
+
+            conn.on('data', (data) => {
+                // Protocolo simples de comunicação
+                if (data.type === 'meta') {
+                    // Início do envio
+                    receivedBuffers = [];
+                    receivedBytes = 0;
+                    totalBytes = data.size;
+                    fileType = data.mime;
+                    console.log('Recebendo arquivo:', data.name, data.size);
+                    
+                    // Avisa que pode mandar
+                    conn.send({ type: 'ack-start' });
+                } 
+                else if (data.type === 'chunk') {
+                    // Recebendo pedaços do arquivo
+                    receivedBuffers.push(data.payload);
+                    receivedBytes += data.payload.byteLength;
+
+                    // Atualiza progresso (opcional, pode mandar msg de volta pro celular)
+                    if (receivedBytes >= totalBytes) {
+                        // Arquivo completo!
+                        const blob = new Blob(receivedBuffers, { type: fileType });
+                        const url = URL.createObjectURL(blob);
+                        videoElement.src = url;
+                        videoElement.play();
+                        conn.send({ type: 'complete' });
+                    } else {
+                        // Solicita próximo chunk (Controle de fluxo simples)
+                        conn.send({ type: 'ack-chunk' }); 
+                    }
+                }
+                else if (data.type === 'command') {
+                    // Comandos remotos
+                    handleRemoteCommand(data.cmd);
+                }
+            });
+        }
+
+        function handleRemoteCommand(cmd) {
+            const v = document.getElementById('main-video');
+            switch(cmd) {
+                case 'play': v.play(); break;
+                case 'pause': v.pause(); break;
+                case 'vol-up': v.volume = Math.min(1, v.volume + 0.1); break;
+                case 'vol-down': v.volume = Math.max(0, v.volume - 0.1); break;
+            }
+        }
+
+        // --- LÓGICA DO REMOTE (CELULAR) ---
+        function startRemote() {
+            modeSelection.style.display = 'none';
+            remoteView.style.display = 'flex';
+            
+            // Cria peer (ID automático pois não importa pro cliente)
+            peer = new Peer();
+        }
+
+        function connectToPeer() {
+            const targetId = document.getElementById('remote-id-input').value.toUpperCase();
+            if (targetId.length < 1) return alert('Digite o código!');
+
+            const btn = document.querySelector('#connect-group button');
+            btn.textContent = 'Conectando...';
+            btn.disabled = true;
+
+            conn = peer.connect(targetId);
+
+            conn.on('open', () => {
+                document.getElementById('connect-group').style.display = 'none';
+                document.getElementById('upload-group').style.display = 'block';
+            });
+
+            conn.on('error', (err) => {
+                alert('Erro na conexão: ' + err);
+                btn.disabled = false;
+                btn.textContent = 'Conectar';
+            });
+
+            // Configurar listeners de resposta do Host
+            conn.on('data', (data) => {
+                if (data.type === 'ack-start') {
+                    sendNextChunk();
+                } else if (data.type === 'ack-chunk') {
+                    sendNextChunk();
+                } else if (data.type === 'complete') {
+                    document.getElementById('transfer-status').textContent = "Reproduzindo na TV!";
+                    document.getElementById('progress-bar').style.background = '#00b894';
+                }
+            });
+        }
+
+        // --- LÓGICA DE TRANSFERÊNCIA DE ARQUIVO ---
+        let currentFile = null;
+        let fileOffset = 0;
+
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            currentFile = file;
+            fileOffset = 0;
+
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('transfer-status').textContent = "Iniciando transferência...";
+
+            // 1. Enviar Metadados
+            conn.send({
+                type: 'meta',
+                name: file.name,
+                size: file.size,
+                mime: file.type
+            });
+        });
+
+        function sendNextChunk() {
+            if (fileOffset >= currentFile.size) return;
+
+            const reader = new FileReader();
+            
+            // Cortar o arquivo
+            const slice = currentFile.slice(fileOffset, fileOffset + CHUNK_SIZE);
+            
+            reader.onload = (e) => {
+                // Enviar buffer
+                conn.send({
+                    type: 'chunk',
+                    payload: e.target.result
+                });
+
+                fileOffset += CHUNK_SIZE;
+
+                // UI Update
+                const percent = Math.min(100, (fileOffset / currentFile.size) * 100);
+                document.getElementById('progress-bar').style.width = percent + '%';
+                
+                if (percent < 100) {
+                    document.getElementById('transfer-status').textContent = `Enviando: ${Math.round(percent)}%`;
+                }
+            };
+
+            reader.readAsArrayBuffer(slice);
+        }
+
+        function sendCommand(cmd) {
+            if (conn && conn.open) {
+                conn.send({ type: 'command', cmd: cmd });
+            }
+        }
+
+    </script>
+</body>
+</html>
+
+
