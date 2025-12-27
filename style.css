@@ -1,0 +1,628 @@
+/* 
+   ANDROID APPLIKE THEME (Material 3 Inspired)
+   Optimized for Mobile Web App Experience
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
+
+:root {
+    /* M3 Colors */
+    --md-sys-color-primary: #006c4c;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #89f8c7;
+    --md-sys-color-on-primary-container: #002114;
+
+    --md-sys-color-secondary: #4d6357;
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: #d0e8d9;
+    --md-sys-color-on-secondary-container: #0b1f16;
+
+    --md-sys-color-tertiary: #3d6473;
+    --md-sys-color-on-tertiary: #ffffff;
+    --md-sys-color-tertiary-container: #c1e8fb;
+    --md-sys-color-on-tertiary-container: #001f29;
+
+    --md-sys-color-error: #ba1a1a;
+    --md-sys-color-on-error: #ffffff;
+
+    --md-sys-color-background: #fbfdf9;
+    --md-sys-color-on-background: #191c1a;
+    --md-sys-color-surface: #fbfdf9;
+    --md-sys-color-on-surface: #191c1a;
+
+    --md-sys-color-surface-variant: #dbe5de;
+    --md-sys-color-on-surface-variant: #404944;
+    --md-sys-color-outline: #707973;
+
+    /* Specific App Colors */
+    --app-bg: #F2F2F2;
+    /* Standard Android background gray */
+    --app-surface: #FFFFFF;
+
+    /* Dimensions */
+    --bottom-nav-height: 80px;
+    --header-height: 64px;
+    --border-radius: 16px;
+
+    /* Shadows */
+    --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    --elevation-2: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+    --elevation-3: 0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.10);
+
+    /* Transitions */
+    --motion-default: 0.3s cubic-bezier(0.2, 0.0, 0, 1.0);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    /* App-like behavior */
+}
+
+input,
+textarea {
+    user-select: text;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--app-bg);
+    color: var(--md-sys-color-on-background);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    /* App Shell: Body doesn't scroll, content does */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- APP SHELL --- */
+
+header {
+    height: var(--header-height);
+    background: var(--app-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    box-shadow: var(--elevation-1);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.logo {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+}
+
+.logo i {
+    color: var(--md-sys-color-primary);
+    font-size: 1.5rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Scrollable Main Area */
+.container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    /* Mobile First */
+    margin: 0;
+    padding-bottom: calc(var(--bottom-nav-height) + 80px);
+    /* Space for FAB/Nav */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom Nav */
+.main-nav {
+    height: var(--bottom-nav-height);
+    background: var(--app-surface);
+    border-top: 1px solid var(--md-sys-color-surface-variant);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 20;
+    display: flex;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-list {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    align-items: center;
+    list-style: none;
+}
+
+.nav-list a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.75rem;
+    font-weight: 500;
+    gap: 4px;
+    width: 64px;
+    border-radius: 16px;
+    padding: 4px 0;
+    transition: var(--motion-default);
+}
+
+.nav-list a i {
+    font-size: 1.5rem;
+    padding: 4px 20px;
+    border-radius: 16px;
+    transition: var(--motion-default);
+    margin-bottom: 4px;
+}
+
+.nav-list a.active {
+    color: var(--md-sys-color-on-surface);
+    font-weight: 700;
+}
+
+.nav-list a.active i {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+/* --- COMPONENTS --- */
+
+/* Page Titles */
+.page-title {
+    font-size: 1.5rem;
+    margin: 8px 0 24px 0;
+    color: var(--md-sys-color-on-background);
+    padding-left: 4px;
+}
+
+/* Cards */
+.card {
+    background: var(--app-surface);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* Very subtle card border */
+    border: 1px solid #eee;
+}
+
+/* Search Bar (Material Filled Style) */
+.search-container {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.input-wrapper {
+    background: var(--md-sys-color-surface-variant);
+    /* M3 Surface Variant */
+    border-radius: 28px;
+    /* High pill */
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+.input-wrapper i {
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 1.25rem;
+    margin-right: 12px;
+}
+
+.input-wrapper input {
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    color: var(--md-sys-color-on-surface);
+    width: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* Filter Chips */
+.filter-chips-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 0 4px 16px 4px;
+    scrollbar-width: none;
+}
+
+.filter-chips-container::-webkit-scrollbar {
+    display: none;
+}
+
+.chip {
+    background: transparent;
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface-variant);
+    white-space: nowrap;
+    transition: var(--motion-default);
+}
+
+.chip.active {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-color: transparent;
+}
+
+.chip:active {
+    transform: scale(0.95);
+}
+
+/* Products Grid */
+.products-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* 2 columns standard */
+    gap: 12px;
+    padding-bottom: 80px;
+}
+
+.product-card {
+    background: var(--app-surface);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    /* Minimal shadow */
+}
+
+/* Ripple Effect Simulation */
+.product-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: black;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.product-card:active::after {
+    opacity: 0.1;
+}
+
+.product-image {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: #f0f0f0;
+}
+
+.product-info {
+    padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-title {
+    font-size: 0.9rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-price {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface);
+    margin-top: auto;
+}
+
+.product-category {
+    font-size: 0.7rem;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-bottom: 4px;
+}
+
+/* Stores */
+.store-card {
+    background: var(--app-surface);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.store-card:active {
+    background: #f5f5f5;
+}
+
+.store-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Buttons */
+.btn {
+    height: 48px;
+    /* Touch target */
+    border-radius: 24px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    cursor: pointer;
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    box-shadow: var(--elevation-1);
+    transition: var(--motion-default);
+}
+
+.btn:active {
+    box-shadow: none;
+    opacity: 0.9;
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--md-sys-color-primary);
+    border: 1px solid var(--md-sys-color-outline);
+    box-shadow: none;
+}
+
+.btn-whatsapp {
+    background: #25D366;
+    color: white;
+}
+
+.btn-danger {
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+
+.btn-warning {
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
+}
+
+/* FAB */
+.fab {
+    position: fixed;
+    bottom: 100px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    /* M3 FAB is squircle-ish */
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
+    display: none;
+    /* JS toggles */
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: var(--elevation-3);
+    z-index: 30;
+    transition: var(--motion-default);
+}
+
+.fab:active {
+    transform: scale(0.9);
+}
+
+/* Inputs (Form) */
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.form-control {
+    background: var(--app-surface);
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: 4px;
+    padding: 16px;
+    color: var(--md-sys-color-on-surface);
+    width: 100%;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    border-color: var(--md-sys-color-primary);
+    outline: 2px solid var(--md-sys-color-primary);
+}
+
+/* Modals (Full Screen on Mobile) */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Bottom sheet logic */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: var(--md-sys-color-surface);
+    width: 100%;
+    max-width: 600px;
+    border-radius: 28px 28px 0 0;
+    padding: 24px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.modal.active .modal-content {
+    transform: translateY(0);
+}
+
+@media(min-width: 600px) {
+    .modal {
+        align-items: center;
+    }
+
+    .modal-content {
+        border-radius: 28px;
+        transform: scale(0.9);
+        width: 90%;
+    }
+
+    .modal.active .modal-content {
+        transform: scale(1);
+    }
+}
+
+.close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--md-sys-color-surface-variant);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: var(--md-sys-color-surface-variant);
+    margin-bottom: 16px;
+}
+
+/* Page Animations */
+.page {
+    display: none;
+    opacity: 0;
+}
+
+.page.active {
+    display: block;
+    animation: fadeUp 0.3s forwards;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hide Desktop things on Mobile if needed */
+.user-name-span {
+    display: none;
+}
+
+/* Desktop Tweaks */
+@media(min-width: 800px) {
+    body {
+        background: #e0e0e0;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Simulate App Window on Desktop */
+    header {
+        width: 400px;
+        border-radius: 24px 24px 0 0;
+    }
+
+    .container {
+        width: 400px;
+        background: var(--app-bg);
+    }
+
+    .main-nav {
+        width: 400px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 0 0 24px 24px;
+        bottom: 20px;
+    }
+
+    /* Reset container height for the simulation */
+    .container {
+        height: 80vh;
+        flex: none;
+        border-left: 1px solid #ccc;
+        border-right: 1px solid #ccc;
+    }
+}
