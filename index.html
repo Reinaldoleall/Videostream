@@ -2,444 +2,520 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Gerador Inteligente de Relatórios | Auto-Completar</title>
-    <!-- TailwindCSS v3 + Font Awesome + Google Fonts -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Agenda Colaborativa</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         * { font-family: 'Inter', sans-serif; }
-        body { background: #f4f7fc; }
-        /* Animações suaves */
-        .transition-smooth { transition: all 0.2s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1); }
-        /* Scroll personalizado */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-        /* Datalist / auto-suggest */
-        input:focus, textarea:focus, select:focus { outline: none; ring: 2px solid #3b82f6; }
-        .report-card {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.05);
+        .task-card {
+            transition: all 0.3s ease;
         }
-        .badge-type {
-            background: #eef2ff;
-            color: #1e3a8a;
-            font-weight: 600;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.7rem;
-            border-radius: 30px;
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
         }
-        button:active { transform: scale(0.97); }
+        .status-active {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
-<body class="p-4 md:p-6">
-
-    <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3"><i class="fas fa-chart-line text-blue-600"></i> Gerador Inteligente de Relatórios</h1>
-                <p class="text-slate-500 mt-1 text-sm">Campos com auto-sugestão baseada em entradas anteriores • Relatórios rápidos e completos</p>
-            </div>
-            <div class="flex gap-3">
-                <button id="btnNovoRelatorio" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition flex items-center gap-2 text-sm font-medium"><i class="fas fa-plus"></i> Novo Relatório</button>
-                <button id="btnExportarTudo" class="bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-md hover:bg-emerald-700 transition flex items-center gap-2 text-sm font-medium"><i class="fas fa-download"></i> Exportar Todos</button>
-            </div>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <i class="fas fa-tasks text-6xl text-indigo-600 animate-bounce"></i>
+            <p class="mt-4 text-gray-600">Carregando TaskFlow...</p>
         </div>
+    </div>
 
-        <!-- Área de criação do relatório -->
-        <div class="report-card p-5 mb-8 border border-gray-100">
-            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                <h2 class="text-xl font-semibold text-slate-700"><i class="fas fa-pen-alt mr-2 text-blue-500"></i> Criar novo relatório</h2>
-                <div class="flex gap-2">
-                    <select id="tipoRelatorioSelect" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm">
-                        <option value="Exposição e Ação edredom">📋 Exposição e Ação edredom</option>
-                        <option value="Degustação de Doce Prestígio">🍬 Degustação de Doce Prestígio</option>
-                        <option value="Exposição Porta de Loja">🚪 Exposição Porta de Loja</option>
-                        <option value="Venda">💰 Venda</option>
-                        <option value="Análise Panasonic X Concorrência">📊 Análise Panasonic X Concorrência</option>
-                        <option value="Estoque Carrefour 110W">📦 Estoque Carrefour 110W</option>
-                        <option value="Introdução de Produto">✨ Introdução de Produto</option>
-                    </select>
+    <!-- Login Container -->
+    <div id="loginContainer" class="min-h-screen flex items-center justify-center px-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <i class="fas fa-tasks text-5xl text-indigo-600"></i>
+                <h1 class="text-3xl font-bold mt-4 text-gray-800">TaskFlow</h1>
+                <p class="text-gray-500 mt-2">Agenda Colaborativa em Tempo Real</p>
+            </div>
+            <button onclick="signInWithGoogle()" class="w-full bg-white border-2 border-gray-200 hover:border-indigo-500 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3">
+                <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
+                Entrar com Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="hidden">
+        <!-- Header -->
+        <div class="bg-white shadow-lg sticky top-0 z-20">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-tasks text-2xl text-indigo-600"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">TaskFlow</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+                        <i class="fas fa-user-circle text-gray-600"></i>
+                        <span id="userName" class="text-sm font-medium text-gray-700"></span>
+                    </div>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Campos dinâmicos com sugestão inteligente (datalist) -->
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Cód da ação / Tipo</label><input type="text" id="campoCodAcao" list="listaCodAcao" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Ex: ED_LET_01"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Rede</label><input type="text" id="campoRede" list="listaRedes" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Sipolatti, Fast Shop, Carrefour..."></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">ID</label><input type="text" id="campoId" list="listaIds" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="96138"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Filial</label><input type="text" id="campoFilial" list="listaFiliais" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="36 Shopping Vila Velha"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Cidade</label><input type="text" id="campoCidade" list="listaCidades" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Vila Velha"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Produtos</label><input type="text" id="campoProdutos" list="listaProdutos" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="NA-F190G1BA/NA-F150B1T"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Coordenador</label><input type="text" id="campoCoordenador" list="listaCoordenadores" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Rosangela Fregonassi"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Consultor(a)</label><input type="text" id="campoConsultor" list="listaConsultores" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Elane"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Regional</label><input type="text" id="campoRegional" list="listaRegionais" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Leste, SPC, Centro Oeste"></div>
-                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Data</label><input type="date" id="campoData" class="w-full border rounded-lg p-2.5 text-sm mt-1"></div>
-            </div>
-            <!-- Campo extra para análises detalhadas (opcional) -->
-            <div class="mt-4">
-                <label class="block text-xs font-semibold text-gray-500 uppercase">Conteúdo extra / Observações (comparativos, estoques)</label>
-                <textarea id="campoExtra" rows="3" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Ex: Geladeira BB64X2: R$4.749,00, CD:0, Concorrente Electrolux..."></textarea>
-            </div>
-            <div class="flex justify-end mt-5">
-                <button id="btnSalvarRelatorio" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 font-medium transition"><i class="fas fa-save"></i> Gerar & Armazenar Relatório</button>
-            </div>
         </div>
 
-        <!-- Lista de relatórios gerados -->
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="text-xl font-bold text-slate-800"><i class="fas fa-folder-open mr-2 text-amber-600"></i> Relatórios gerados (<span id="contadorRelatorios">0</span>)</h2>
-            <button id="limparHistoricoBtn" class="text-red-500 text-sm hover:text-red-700 transition"><i class="fas fa-trash-alt"></i> Limpar histórico</button>
+        <div class="container mx-auto px-4 py-8">
+            <!-- Date Navigation -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center gap-4">
+                        <button onclick="changeDate(-1)" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        <input type="date" id="datePicker" class="border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none">
+                        <button onclick="changeDate(1)" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg transition">
+                            Próximo <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <button onclick="showAddTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition shadow-md">
+                        <i class="fas fa-plus"></i> Nova Tarefa
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Tasks Column -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold mb-4 text-gray-800">
+                            <i class="fas fa-list-check text-indigo-600"></i> Tarefas do Dia
+                        </h2>
+                        <div id="tasksList" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Files & Active Users Column -->
+                <div class="space-y-6">
+                    <!-- Active Users Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">
+                            <i class="fas fa-users text-green-600"></i> Trabalhando Agora
+                        </h3>
+                        <div id="activeUsersList" class="space-y-2 max-h-[200px] overflow-y-auto"></div>
+                    </div>
+
+                    <!-- Shared Files Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">
+                                <i class="fas fa-paperclip text-blue-600"></i> Arquivos Compartilhados
+                            </h3>
+                            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                            <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
+                        </div>
+                        <div id="filesList" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="listaRelatorios" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <!-- cards dinâmicos -->
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 class="text-xl font-bold mb-4">Nova Tarefa</h3>
+            <input type="text" id="taskTitle" placeholder="Título da tarefa" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-3 focus:border-indigo-500 outline-none">
+            <textarea id="taskDesc" placeholder="Descrição" rows="3" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-3 focus:border-indigo-500 outline-none"></textarea>
+            <select id="taskPriority" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-3 focus:border-indigo-500 outline-none">
+                <option value="alta">🔴 Alta Prioridade</option>
+                <option value="media">🟡 Média Prioridade</option>
+                <option value="baixa">🟢 Baixa Prioridade</option>
+            </select>
+            <input type="email" id="inviteEmail" placeholder="Convidar por email (opcional)" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-4 focus:border-indigo-500 outline-none">
+            <div class="flex gap-3">
+                <button onclick="createTask()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg transition">Criar</button>
+                <button onclick="closeModal('taskModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg transition">Cancelar</button>
+            </div>
         </div>
-        <div id="semRelatoriosMsg" class="text-center text-gray-400 py-10 hidden">Nenhum relatório ainda. Crie um acima! 🚀</div>
     </div>
 
     <script>
-        // -------------------- ESTRUTURA DE DADOS + AUTOCOMPLETAR INTELIGENTE --------------------
-        // Chaves para armazenamento local
-        const STORAGE_REPORTS = "smart_reports_list";
-        const STORAGE_SUGGESTIONS = "smart_suggestions_map";
-
-        // Dicionário de sugestões: cada campo guarda um Set de valores únicos já utilizados
-        let suggestionsDB = {
-            codAcao: new Set(),
-            rede: new Set(),
-            id: new Set(),
-            filial: new Set(),
-            cidade: new Set(),
-            produtos: new Set(),
-            coordenador: new Set(),
-            consultor: new Set(),
-            regional: new Set(),
-            extra: new Set()   // Para observações também sugestões
-        };
-
-        // Relatórios armazenados
-        let relatorios = [];   // cada objeto: { tipo, codAcao, rede, id, filial, cidade, produtos, coordenador, consultor, regional, data, extra, timestamp }
-
-        // Inicialização: carregar dados do localStorage
-        function carregarDados() {
-            const savedReports = localStorage.getItem(STORAGE_REPORTS);
-            if(savedReports) {
-                try {
-                    relatorios = JSON.parse(savedReports);
-                } catch(e) { relatorios = []; }
-            } else {
-                // Dados iniciais de exemplo para demonstração (baseados nas legendas do usuário)
-                relatorios = [
-                    { tipo:"Exposição e Ação edredom", codAcao:"ED_LET_01", rede:"Sipolatti", id:"96138", filial:"36 Shopping Vila Velha", cidade:"Vila Velha", produtos:"NA-F190G1BA/NA-F150B1T", coordenador:"Rosangela Fregonassi", consultor:"Elane", regional:"Leste", data:"2026-04-04", extra:"" },
-                    { tipo:"Degustação de Doce Prestígio", codAcao:"", rede:"Fast Shop", id:"8215", filial:"FS- Barra Shopping", cidade:"Rio de Janeiro", produtos:"GB68QS", coordenador:"Anderson Duarte", consultor:"Fábio Rivelo", regional:"Leste", data:"2026-04-04", extra:"" },
-                    { tipo:"Exposição Porta de Loja", codAcao:"", rede:"Lojas Cem", id:"16805", filial:"148 - Carrão", cidade:"São Paulo - SP", produtos:"BT71W/F150W", coordenador:"Anderson Duarte", consultor:"Danielly Costa", regional:"SPC", data:"2026-04-07", extra:"" },
-                    { tipo:"Venda", codAcao:"", rede:"Carrefour", id:"7702", filial:"Shopping Eldorado", cidade:"São Paulo- SP", produtos:"ST27L", coordenador:"Anderson Duarte", consultor:"Márjory Sousa", regional:"SPC", data:"2026-04-07", extra:"" },
-                    { tipo:"Análise Panasonic X Concorrência", codAcao:"", rede:"Carrefour", id:"", filial:"Carrefour", cidade:"", produtos:"BB64X2, BB65GV7", coordenador:"", consultor:"", regional:"Centro Oeste", data:"2026-04-01", extra:"Geladeira: BB64X2 R$4.749,00 CD:0 concorrente Electrolux IB7S R$5.199; BB65GV7 R$5.599; Máquina Lavar NA-F150P1WB R$2.299 CD44..." },
-                    { tipo:"Estoque Carrefour 110W", codAcao:"", rede:"Carrefour", id:"", filial:"", cidade:"", produtos:"BB64X, BT44W, F150B1W", coordenador:"", consultor:"", regional:"SPC", data:"2026-04-04", extra:"BB64X R$4.799 CD❌; BT44W R$2.999 CD309; F150B1W R$2.299 CD❌; ST27L CD192" },
-                    { tipo:"Introdução de Produto", codAcao:"", rede:"Carrefour", id:"", filial:"Carrefour Vila Velha", cidade:"Vila Velha- ES", produtos:"BT44PV3XA", coordenador:"", consultor:"", regional:"", data:"2026-04-07", extra:"Preço: 3.149,90" }
-                ];
-            }
-
-            const savedSuggestions = localStorage.getItem(STORAGE_SUGGESTIONS);
-            if(savedSuggestions) {
-                try {
-                    const parsed = JSON.parse(savedSuggestions);
-                    for(let key in suggestionsDB) {
-                        if(parsed[key] && Array.isArray(parsed[key])) {
-                            suggestionsDB[key] = new Set(parsed[key]);
-                        }
-                    }
-                } catch(e) {}
-            }
-
-            // Atualiza sugestões com base nos relatórios carregados (para garantir consistência)
-            relatorios.forEach(rep => {
-                adicionarSugestoesDeRelatorio(rep);
-            });
-            atualizarTodasDatalists();
-            renderizarRelatorios();
-        }
-
-        function adicionarSugestoesDeRelatorio(rel) {
-            if(rel.codAcao && rel.codAcao.trim()) suggestionsDB.codAcao.add(rel.codAcao.trim());
-            if(rel.rede && rel.rede.trim()) suggestionsDB.rede.add(rel.rede.trim());
-            if(rel.id && rel.id.trim()) suggestionsDB.id.add(rel.id.trim());
-            if(rel.filial && rel.filial.trim()) suggestionsDB.filial.add(rel.filial.trim());
-            if(rel.cidade && rel.cidade.trim()) suggestionsDB.cidade.add(rel.cidade.trim());
-            if(rel.produtos && rel.produtos.trim()) suggestionsDB.produtos.add(rel.produtos.trim());
-            if(rel.coordenador && rel.coordenador.trim()) suggestionsDB.coordenador.add(rel.coordenador.trim());
-            if(rel.consultor && rel.consultor.trim()) suggestionsDB.consultor.add(rel.consultor.trim());
-            if(rel.regional && rel.regional.trim()) suggestionsDB.regional.add(rel.regional.trim());
-            if(rel.extra && rel.extra.trim()) suggestionsDB.extra.add(rel.extra.trim());
-        }
-
-        function salvarSuggestionsStorage() {
-            let toStore = {};
-            for(let key in suggestionsDB) {
-                toStore[key] = Array.from(suggestionsDB[key]);
-            }
-            localStorage.setItem(STORAGE_SUGGESTIONS, JSON.stringify(toStore));
-        }
-
-        function atualizarTodasDatalists() {
-            atualizarDatalist("listaCodAcao", suggestionsDB.codAcao);
-            atualizarDatalist("listaRedes", suggestionsDB.rede);
-            atualizarDatalist("listaIds", suggestionsDB.id);
-            atualizarDatalist("listaFiliais", suggestionsDB.filial);
-            atualizarDatalist("listaCidades", suggestionsDB.cidade);
-            atualizarDatalist("listaProdutos", suggestionsDB.produtos);
-            atualizarDatalist("listaCoordenadores", suggestionsDB.coordenador);
-            atualizarDatalist("listaConsultores", suggestionsDB.consultor);
-            atualizarDatalist("listaRegionais", suggestionsDB.regional);
-        }
-
-        function atualizarDatalist(datalistId, setValores) {
-            let datalist = document.getElementById(datalistId);
-            if(!datalist) {
-                // criar dinamicamente se não existir
-                datalist = document.createElement("datalist");
-                datalist.id = datalistId;
-                document.body.appendChild(datalist);
-            }
-            datalist.innerHTML = "";
-            const arr = Array.from(setValores).sort();
-            arr.forEach(val => {
-                let option = document.createElement("option");
-                option.value = val;
-                datalist.appendChild(option);
-            });
-        }
-
-        function salvarRelatoriosStorage() {
-            localStorage.setItem(STORAGE_REPORTS, JSON.stringify(relatorios));
-        }
-
-        // Função que coleta dados do formulário e gera novo relatório
-        function coletarFormulario() {
-            const tipoSelect = document.getElementById("tipoRelatorioSelect").value;
-            const codAcao = document.getElementById("campoCodAcao").value.trim();
-            const rede = document.getElementById("campoRede").value.trim();
-            const id = document.getElementById("campoId").value.trim();
-            const filial = document.getElementById("campoFilial").value.trim();
-            const cidade = document.getElementById("campoCidade").value.trim();
-            const produtos = document.getElementById("campoProdutos").value.trim();
-            const coordenador = document.getElementById("campoCoordenador").value.trim();
-            const consultor = document.getElementById("campoConsultor").value.trim();
-            const regional = document.getElementById("campoRegional").value.trim();
-            let data = document.getElementById("campoData").value;
-            if(!data) {
-                const hoje = new Date().toISOString().slice(0,10);
-                data = hoje;
-            }
-            const extra = document.getElementById("campoExtra").value.trim();
-
-            // Validação simples: pelo menos rede ou tipo visível
-            if(!rede && !codAcao && !produtos && !extra) {
-                alert("Preencha ao menos um campo relevante (Rede, Produtos ou Código) para gerar o relatório.");
-                return null;
-            }
-
-            const novoRelatorio = {
-                tipo: tipoSelect,
-                codAcao,
-                rede,
-                id,
-                filial,
-                cidade,
-                produtos,
-                coordenador,
-                consultor,
-                regional,
-                data,
-                extra,
-                timestamp: Date.now()
+        // Firebase Configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
+                authDomain: "marketplaceconnect-af26d.firebaseapp.com",
+                databaseURL: "https://marketplaceconnect-af26d-default-rtdb.firebaseio.com",
+                projectId: "marketplaceconnect-af26d",
+                storageBucket: "marketplaceconnect-af26d.firebasestorage.app",
+                messagingSenderId: "768552546759",
+                appId: "1:768552546759:web:4367fc4a161ecf90c469e2",
+                measurementId: "G-7HHR78MHDP"
             };
-            return novoRelatorio;
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        let currentUser = null;
+        let currentDate = new Date().toISOString().split('T')[0];
+
+        // Auth State Observer
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginContainer').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('userName').textContent = user.displayName || user.email;
+                
+                await initializeUser();
+                loadTasks();
+                loadFiles();
+                setupRealtimeListeners();
+                setupActiveStatus();
+            } else {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginContainer').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        });
+
+        async function initializeUser() {
+            await db.collection('users').doc(currentUser.uid).set({
+                email: currentUser.email,
+                name: currentUser.displayName,
+                photoURL: currentUser.photoURL,
+                lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+                online: true
+            }, { merge: true });
         }
 
-        function limparFormulario() {
-            document.getElementById("campoCodAcao").value = "";
-            document.getElementById("campoRede").value = "";
-            document.getElementById("campoId").value = "";
-            document.getElementById("campoFilial").value = "";
-            document.getElementById("campoCidade").value = "";
-            document.getElementById("campoProdutos").value = "";
-            document.getElementById("campoCoordenador").value = "";
-            document.getElementById("campoConsultor").value = "";
-            document.getElementById("campoRegional").value = "";
-            document.getElementById("campoData").value = "";
-            document.getElementById("campoExtra").value = "";
-            // reset tipo select para padrão, mas mantém
+        function setupActiveStatus() {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            
+            const updateStatus = () => {
+                userRef.update({
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+                    online: true
+                });
+            };
+            
+            updateStatus();
+            setInterval(updateStatus, 30000);
+            
+            window.addEventListener('beforeunload', () => {
+                userRef.update({ online: false });
+            });
         }
 
-        function adicionarRelatorio(relatorio) {
-            if(!relatorio) return;
-            relatorios.unshift(relatorio); // mais recente primeiro
-            adicionarSugestoesDeRelatorio(relatorio);
-            salvarSuggestionsStorage();
-            atualizarTodasDatalists();
-            salvarRelatoriosStorage();
-            renderizarRelatorios();
-            limparFormulario();
+        function setupRealtimeListeners() {
+            // Listen to active users
+            db.collection('users').where('online', '==', true)
+                .onSnapshot((snapshot) => {
+                    const activeUsers = [];
+                    snapshot.forEach(doc => {
+                        if (doc.id !== currentUser.uid) {
+                            activeUsers.push(doc.data());
+                        }
+                    });
+                    displayActiveUsers(activeUsers);
+                });
+            
+            // Listen to tasks for current date
+            db.collection('tasks')
+                .where('date', '==', currentDate)
+                .orderBy('priority', 'desc')
+                .onSnapshot(() => loadTasks());
         }
 
-        function renderizarRelatorios() {
-            const container = document.getElementById("listaRelatorios");
-            const contadorSpan = document.getElementById("contadorRelatorios");
-            const msgVazia = document.getElementById("semRelatoriosMsg");
-            contadorSpan.innerText = relatorios.length;
-            if(relatorios.length === 0) {
-                container.innerHTML = "";
-                msgVazia.classList.remove("hidden");
+        async function loadTasks() {
+            const tasksSnapshot = await db.collection('tasks')
+                .where('date', '==', currentDate)
+                .orderBy('priorityValue', 'desc')
+                .get();
+            
+            const tasks = [];
+            tasksSnapshot.forEach(doc => {
+                tasks.push({ id: doc.id, ...doc.data() });
+            });
+            
+            displayTasks(tasks);
+        }
+
+        function displayTasks(tasks) {
+            const container = document.getElementById('tasksList');
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">Nenhuma tarefa para este dia</div>';
                 return;
             }
-            msgVazia.classList.add("hidden");
-            container.innerHTML = "";
-            relatorios.forEach((rel, idx) => {
-                const card = document.createElement("div");
-                card.className = "report-card p-5 border border-gray-100 hover:shadow-md transition-smooth";
-                // Badge com tipo
-                let badgeHtml = `<div class="badge-type inline-block mb-3"><i class="far fa-file-alt mr-1"></i> ${escapeHtml(rel.tipo)}</div>`;
-                let dataFormatada = rel.data ? new Date(rel.data).toLocaleDateString('pt-BR') : "Data não informada";
-                let detalhes = `
-                    <div class="space-y-2 text-sm">
-                        ${rel.codAcao ? `<div><span class="font-semibold text-gray-600">Cód ação:</span> ${escapeHtml(rel.codAcao)}</div>` : ''}
-                        ${rel.rede ? `<div><span class="font-semibold text-gray-600">Rede:</span> ${escapeHtml(rel.rede)}</div>` : ''}
-                        ${rel.id ? `<div><span class="font-semibold text-gray-600">ID:</span> ${escapeHtml(rel.id)}</div>` : ''}
-                        ${rel.filial ? `<div><span class="font-semibold text-gray-600">Filial:</span> ${escapeHtml(rel.filial)}</div>` : ''}
-                        ${rel.cidade ? `<div><span class="font-semibold text-gray-600">Cidade:</span> ${escapeHtml(rel.cidade)}</div>` : ''}
-                        ${rel.produtos ? `<div><span class="font-semibold text-gray-600">Produtos:</span> ${escapeHtml(rel.produtos)}</div>` : ''}
-                        ${rel.coordenador ? `<div><span class="font-semibold text-gray-600">Coordenador:</span> ${escapeHtml(rel.coordenador)}</div>` : ''}
-                        ${rel.consultor ? `<div><span class="font-semibold text-gray-600">Consultor(a):</span> ${escapeHtml(rel.consultor)}</div>` : ''}
-                        ${rel.regional ? `<div><span class="font-semibold text-gray-600">Regional:</span> ${escapeHtml(rel.regional)}</div>` : ''}
-                        <div><span class="font-semibold text-gray-600">Data:</span> ${dataFormatada}</div>
-                        ${rel.extra ? `<div class="mt-2 pt-2 border-t border-gray-100"><span class="font-semibold text-gray-600">Observações/Análise:</span><p class="text-gray-700 text-xs whitespace-pre-line mt-1">${escapeHtml(rel.extra)}</p></div>` : ''}
-                    </div>
-                `;
-                card.innerHTML = `
+            
+            container.innerHTML = tasks.map(task => `
+                <div class="task-card bg-gray-50 rounded-lg p-4 border-l-4 ${getPriorityColor(task.priority)}">
                     <div class="flex justify-between items-start">
-                        ${badgeHtml}
-                        <button class="removerRelatorio text-gray-400 hover:text-red-500 transition" data-index="${idx}"><i class="fas fa-trash-alt"></i></button>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <h4 class="font-semibold text-gray-800">${escapeHtml(task.title)}</h4>
+                                <span class="text-xs px-2 py-1 rounded-full ${getPriorityBadge(task.priority)}">${task.priority}</span>
+                                ${task.activeUser ? `<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full"><i class="fas fa-play"></i> ${task.activeUser} está trabalhando</span>` : ''}
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.description || 'Sem descrição')}</p>
+                            <div class="flex items-center gap-4 text-xs text-gray-500">
+                                <span><i class="fas fa-user"></i> Criado por: ${task.createdBy}</span>
+                                ${task.assignedTo ? `<span><i class="fas fa-envelope"></i> Convidado: ${task.assignedTo}</span>` : ''}
+                                ${task.completedBy ? `<span class="text-green-600"><i class="fas fa-check-circle"></i> Concluído por: ${task.completedBy}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            ${!task.completed ? `
+                                <button onclick="startTask('${task.id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">
+                                    <i class="fas fa-play"></i> Iniciar
+                                </button>
+                                <button onclick="completeTask('${task.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                    <i class="fas fa-check"></i> Concluir
+                                </button>
+                            ` : `
+                                <span class="text-green-600 text-sm"><i class="fas fa-check-circle"></i> Concluída</span>
+                            `}
+                        </div>
                     </div>
-                    ${detalhes}
-                    <div class="mt-4 flex justify-end">
-                        <button class="copiarRelatorioBtn text-blue-500 text-xs bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition" data-texto="${escapeHtml(formatarRelatorioTexto(rel))}"><i class="far fa-copy"></i> Copiar</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-            // Eventos remoção e copiar
-            document.querySelectorAll(".removerRelatorio").forEach(btn => {
-                btn.addEventListener("click", (e) => {
-                    const idx = btn.getAttribute("data-index");
-                    if(idx !== null) removerRelatorio(parseInt(idx));
-                });
-            });
-            document.querySelectorAll(".copiarRelatorioBtn").forEach(btn => {
-                btn.addEventListener("click", (e) => {
-                    const texto = btn.getAttribute("data-texto");
-                    if(texto) {
-                        navigator.clipboard.writeText(texto);
-                        mostrarToast("Relatório copiado para área de transferência!");
-                    }
-                });
-            });
+                </div>
+            `).join('');
         }
 
-        function formatarRelatorioTexto(rel) {
-            let lines = [];
-            lines.push(`*Tipo:* ${rel.tipo}`);
-            if(rel.codAcao) lines.push(`*Cód da ação* ${rel.codAcao}`);
-            if(rel.rede) lines.push(`*Rede:* ${rel.rede}`);
-            if(rel.id) lines.push(`*ID:* ${rel.id}`);
-            if(rel.filial) lines.push(`*Filial:* ${rel.filial}`);
-            if(rel.cidade) lines.push(`*Cidade:* ${rel.cidade}`);
-            if(rel.produtos) lines.push(`*Produtos:* ${rel.produtos}`);
-            if(rel.coordenador) lines.push(`*Coordenador:* ${rel.coordenador}`);
-            if(rel.consultor) lines.push(`*Consultora:* ${rel.consultor}`);
-            if(rel.regional) lines.push(`*Regional:* ${rel.regional}`);
-            if(rel.data) lines.push(`*Data:* ${new Date(rel.data).toLocaleDateString('pt-BR')}`);
-            if(rel.extra) lines.push(`*Observações:* ${rel.extra}`);
-            return lines.join("\n");
+        async function startTask(taskId) {
+            await db.collection('tasks').doc(taskId).update({
+                activeUser: currentUser.displayName || currentUser.email,
+                activeStart: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Send notification
+            showNotification(`Você iniciou a tarefa`, 'success');
         }
 
-        function removerRelatorio(index) {
-            if(index >= 0 && index < relatorios.length) {
-                relatorios.splice(index,1);
-                salvarRelatoriosStorage();
-                // Reconstruir sugestões completas a partir dos relatórios atuais (evitar órfãos)
-                for(let key in suggestionsDB) suggestionsDB[key].clear();
-                relatorios.forEach(rep => adicionarSugestoesDeRelatorio(rep));
-                salvarSuggestionsStorage();
-                atualizarTodasDatalists();
-                renderizarRelatorios();
-                mostrarToast("Relatório removido.");
-            }
+        async function completeTask(taskId) {
+            await db.collection('tasks').doc(taskId).update({
+                completed: true,
+                completedBy: currentUser.displayName || currentUser.email,
+                completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                activeUser: null
+            });
+            showNotification('Tarefa concluída!', 'success');
         }
 
-        function exportarTodosRelatorios() {
-            if(relatorios.length === 0) {
-                alert("Nenhum relatório para exportar.");
+        async function createTask() {
+            const title = document.getElementById('taskTitle').value;
+            const desc = document.getElementById('taskDesc').value;
+            const priority = document.getElementById('taskPriority').value;
+            const inviteEmail = document.getElementById('inviteEmail').value;
+            
+            if (!title) {
+                showNotification('Digite um título para a tarefa', 'error');
                 return;
             }
-            let conteudo = "RELATÓRIOS GERADOS - SISTEMA INTELIGENTE\n\n";
-            relatorios.forEach((rel, i) => {
-                conteudo += `[RELATÓRIO ${i+1}]\n`;
-                conteudo += formatarRelatorioTexto(rel);
-                conteudo += "\n-----------------------------------\n\n";
+            
+            const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
+            
+            await db.collection('tasks').add({
+                title: title,
+                description: desc,
+                priority: priority,
+                priorityValue: priorityValue,
+                date: currentDate,
+                createdBy: currentUser.displayName || currentUser.email,
+                createdByUid: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                completed: false,
+                assignedTo: inviteEmail || null,
+                activeUser: null
             });
-            const blob = new Blob([conteudo], {type: "text/plain;charset=utf-8"});
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.href = url;
-            link.download = `relatorios_${new Date().toISOString().slice(0,19)}.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            mostrarToast("Exportação concluída!");
-        }
-
-        function limparHistorico() {
-            if(confirm("Tem certeza? Todos os relatórios serão apagados permanentemente.")) {
-                relatorios = [];
-                for(let key in suggestionsDB) suggestionsDB[key].clear();
-                salvarRelatoriosStorage();
-                salvarSuggestionsStorage();
-                atualizarTodasDatalists();
-                renderizarRelatorios();
-                mostrarToast("Histórico limpo.");
+            
+            if (inviteEmail) {
+                // Notify invited user (simplified)
+                console.log(`Convidado ${inviteEmail} para a tarefa`);
             }
+            
+            closeModal('taskModal');
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDesc').value = '';
+            document.getElementById('inviteEmail').value = '';
+            showNotification('Tarefa criada com sucesso!', 'success');
         }
 
-        function mostrarToast(msg) {
-            let toast = document.createElement("div");
-            toast.innerText = msg;
-            toast.className = "fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2 rounded-full text-sm shadow-lg z-50 transition-all";
-            document.body.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 2500);
+        async function uploadFiles(input) {
+            const files = Array.from(input.files);
+            for (const file of files) {
+                const storageRef = storage.ref(`files/${currentDate}/${Date.now()}_${file.name}`);
+                await storageRef.put(file);
+                const url = await storageRef.getDownloadURL();
+                
+                await db.collection('files').add({
+                    name: file.name,
+                    url: url,
+                    size: file.size,
+                    type: file.type,
+                    uploadedBy: currentUser.displayName || currentUser.email,
+                    uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    date: currentDate
+                });
+            }
+            showNotification(`${files.length} arquivo(s) enviado(s)!`, 'success');
+            loadFiles();
         }
 
-        function escapeHtml(str) { if(!str) return ""; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+        async function loadFiles() {
+            const filesSnapshot = await db.collection('files')
+                .orderBy('uploadedAt', 'desc')
+                .limit(20)
+                .get();
+            
+            const files = [];
+            filesSnapshot.forEach(doc => {
+                files.push({ id: doc.id, ...doc.data() });
+            });
+            
+            displayFiles(files);
+        }
 
-        // Eventos principais
-        document.getElementById("btnSalvarRelatorio").addEventListener("click", () => {
-            const novo = coletarFormulario();
-            if(novo) adicionarRelatorio(novo);
+        function displayFiles(files) {
+            const container = document.getElementById('filesList');
+            if (files.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">Nenhum arquivo compartilhado</div>';
+                return;
+            }
+            
+            container.innerHTML = files.map(file => `
+                <div class="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2 flex-1">
+                        <i class="fas ${getFileIcon(file.type)} text-gray-600"></i>
+                        <span class="text-sm truncate flex-1">${escapeHtml(file.name)}</span>
+                        <span class="text-xs text-gray-500">${formatFileSize(file.size)}</span>
+                    </div>
+                    <a href="${file.url}" download class="text-indigo-600 hover:text-indigo-800">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        function displayActiveUsers(users) {
+            const container = document.getElementById('activeUsersList');
+            if (users.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">Ninguém ativo no momento</div>';
+                return;
+            }
+            
+            container.innerHTML = users.map(user => `
+                <div class="flex items-center gap-3 p-2 bg-green-50 rounded-lg">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-medium">${user.name || user.email}</span>
+                </div>
+            `).join('');
+        }
+
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(error => {
+                showNotification('Erro ao fazer login: ' + error.message, 'error');
+            });
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        function changeDate(delta) {
+            const date = new Date(currentDate);
+            date.setDate(date.getDate() + delta);
+            currentDate = date.toISOString().split('T')[0];
+            document.getElementById('datePicker').value = currentDate;
+            loadTasks();
+        }
+
+        function showAddTaskModal() {
+            document.getElementById('taskModal').classList.remove('hidden');
+            document.getElementById('taskModal').classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+        }
+
+        function getPriorityColor(priority) {
+            return { alta: 'border-red-500', media: 'border-yellow-500', baixa: 'border-green-500' }[priority];
+        }
+
+        function getPriorityBadge(priority) {
+            return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority];
+        }
+
+        function getFileIcon(type) {
+            if (type.includes('pdf')) return 'fa-file-pdf text-red-500';
+            if (type.includes('image')) return 'fa-file-image text-blue-500';
+            if (type.includes('excel') || type.includes('sheet')) return 'fa-file-excel text-green-500';
+            return 'fa-file text-gray-500';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 px-6 py-3 rounded-lg shadow-lg animate-bounce ${type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white`;
+            notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Set today's date in picker
+        document.getElementById('datePicker').value = currentDate;
+        document.getElementById('datePicker').addEventListener('change', (e) => {
+            currentDate = e.target.value;
+            loadTasks();
         });
-        document.getElementById("btnNovoRelatorio").addEventListener("click", () => {
-            limparFormulario();
-            window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Close modal on click outside
+        document.getElementById('taskModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('taskModal')) closeModal('taskModal');
         });
-        document.getElementById("btnExportarTudo").addEventListener("click", exportarTodosRelatorios);
-        document.getElementById("limparHistoricoBtn").addEventListener("click", limparHistorico);
-        
-        // Inicialização
-        carregarDados();
     </script>
 </body>
 </html>
