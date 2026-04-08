@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TaskFlow - Agenda Colaborativa</title>
+    <title>TaskFlow - Agenda Colaborativa + Comentários</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -19,6 +19,7 @@
         
         .task-card { 
             transition: all 0.2s ease; 
+            cursor: pointer;
         }
         
         .task-card:hover { 
@@ -78,6 +79,23 @@
         @keyframes fadeIn { 
             from { opacity: 0; transform: translateY(5px); } 
             to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Estilos para comentários */
+        .comment-bubble {
+            background: #f3f4f6;
+            border-radius: 18px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            transition: 0.1s;
+        }
+        .comment-bubble:hover {
+            background: #e5e7eb;
+        }
+        
+        .modal-scroll {
+            max-height: 70vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -203,10 +221,11 @@
         </button>
     </div>
 
+    <!-- MODAL DE CRIAR/EDITAR TAREFA -->
     <div id="taskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-5">
-                <h3 class="text-xl font-bold text-gray-800">Criar Nova Tarefa</h3>
+                <h3 id="modalTitle" class="text-xl font-bold text-gray-800">Criar Nova Tarefa</h3>
                 <button onclick="closeModal('taskModal')" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times text-lg"></i>
                 </button>
@@ -240,8 +259,62 @@
             </div>
 
             <div class="mt-8">
-                <button onclick="createTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg transition font-semibold shadow-md flex justify-center items-center gap-2">
+                <button id="saveTaskBtn" onclick="handleSaveTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg transition font-semibold shadow-md flex justify-center items-center gap-2">
                     <i class="fas fa-check"></i> Salvar Tarefa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE VISUALIZAÇÃO + COMENTÁRIOS -->
+    <div id="viewModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-5 border-b">
+                <h3 id="viewTaskTitle" class="text-xl font-bold text-gray-800">Carregando...</h3>
+                <button onclick="closeModal('viewModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                <div class="bg-gray-50 p-4 rounded-xl">
+                    <p class="text-sm text-gray-500 font-semibold mb-1">Descrição</p>
+                    <p id="viewTaskDesc" class="text-gray-700 whitespace-pre-wrap"></p>
+                </div>
+                
+                <div class="flex flex-wrap gap-4 text-sm">
+                    <span class="bg-indigo-50 px-3 py-1 rounded-full"><i class="fas fa-flag"></i> Prioridade: <strong id="viewPriority"></strong></span>
+                    <span><i class="fas fa-calendar-alt"></i> Data: <strong id="viewDate"></strong></span>
+                    <span><i class="fas fa-user"></i> Criado por: <strong id="viewCreatedBy"></strong></span>
+                    <span id="assignedSpan"><i class="fas fa-envelope"></i> Atribuído: <strong id="viewAssignedTo"></strong></span>
+                    <span id="completedSpan" class="hidden"><i class="fas fa-check-circle text-green-600"></i> <strong class="text-green-600">Concluída</strong></span>
+                </div>
+                
+                <!-- SEÇÃO DE COMENTÁRIOS -->
+                <div class="border-t pt-4 mt-2">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold text-gray-800"><i class="fas fa-comments text-indigo-500 mr-2"></i>Comentários</h4>
+                        <span id="commentsCount" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="commentsList" class="space-y-2 mb-3 max-h-60 overflow-y-auto bg-gray-50 p-3 rounded-xl"></div>
+                    <div class="flex gap-2">
+                        <input type="text" id="newCommentInput" placeholder="Escreva um comentário..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        <button onclick="addCommentToCurrentTask()" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm hover:bg-indigo-700 transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t flex justify-between gap-3 bg-gray-50 rounded-b-2xl">
+                <button id="editTaskBtnFromView" onclick="openEditFromView()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-semibold transition">
+                    <i class="fas fa-edit mr-1"></i> Editar
+                </button>
+                <button id="deleteTaskBtnFromView" onclick="deleteCurrentTask()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold transition">
+                    <i class="fas fa-trash-alt mr-1"></i> Excluir
+                </button>
+                <button onclick="closeModal('viewModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg font-semibold transition">
+                    Fechar
                 </button>
             </div>
         </div>
@@ -267,6 +340,9 @@
         const storage = firebase.storage();
 
         let currentUser = null;
+        let currentViewTaskId = null;
+        let currentEditTaskId = null;
+        let currentCommentsUnsubscribe = null;
         
         // Função para Data Local Correta
         function getLocalISODate(d) {
@@ -280,60 +356,39 @@
 
         // Lógica para Trocar as Abas
         function switchTab(tabId) {
-            // Esconde todas as abas
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            
-            // Reseta todos os botões de abas
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('active', 'text-indigo-600', 'border-indigo-600', 'bg-indigo-50');
                 el.classList.add('text-gray-500', 'border-transparent');
             });
-
-            // Mostra a aba selecionada
             document.getElementById(`tab-${tabId}`).classList.add('active');
-            
-            // Destaca o botão da aba selecionada
             const btn = document.getElementById(`btn-tab-${tabId}`);
             btn.classList.add('active', 'text-indigo-600', 'border-indigo-600');
-            btn.classList.remove('text-gray-500', 'border-transparent');
-            
-            if(window.innerWidth < 640) {
-                btn.classList.add('bg-indigo-50');
-            }
-
-            // Mostra ou esconde o Botão Flutuante (FAB)
+            if(window.innerWidth < 640) btn.classList.add('bg-indigo-50');
             const fab = document.getElementById('fabAddTask');
-            if (tabId === 'tasks') {
-                fab.classList.remove('hidden');
-            } else {
-                fab.classList.add('hidden');
-            }
+            if (tabId === 'tasks') fab.classList.remove('hidden');
+            else fab.classList.add('hidden');
         }
 
         // Observador de Estado de Autenticação
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
-                
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('appContainer').classList.remove('hidden');
                 document.getElementById('appContainer').classList.add('flex');
-                
                 document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
-                
                 if (user.photoURL) {
                     document.getElementById('userAvatar').src = user.photoURL;
                     document.getElementById('userAvatar').classList.remove('hidden');
                     document.getElementById('userIconFallback').classList.add('hidden');
                 }
-                
                 await initializeUser();
                 loadTasks();
                 loadFiles();
                 setupRealtimeListeners();
                 setupActiveStatus();
-                
             } else {
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.remove('hidden');
@@ -342,7 +397,6 @@
             }
         });
 
-        // Inicializa dados do usuário no banco
         async function initializeUser() {
             try {
                 await db.collection('users').doc(currentUser.uid).set({
@@ -352,148 +406,86 @@
                     lastActive: firebase.firestore.FieldValue.serverTimestamp(),
                     online: true
                 }, { merge: true });
-            } catch (error) { 
-                console.error("Erro ao iniciar user:", error); 
-            }
+            } catch (error) { console.error("Erro ao iniciar user:", error); }
         }
 
-        // Atualiza status online
         function setupActiveStatus() {
             const userRef = db.collection('users').doc(currentUser.uid);
-            
-            const updateStatus = () => {
-                userRef.update({ 
-                    lastActive: firebase.firestore.FieldValue.serverTimestamp(), 
-                    online: true 
-                }).catch(() => {});
-            };
-            
+            const updateStatus = () => { userRef.update({ lastActive: firebase.firestore.FieldValue.serverTimestamp(), online: true }).catch(() => {}); };
             updateStatus();
             setInterval(updateStatus, 30000);
-            
-            window.addEventListener('beforeunload', () => {
-                userRef.update({ online: false });
-            });
+            window.addEventListener('beforeunload', () => { userRef.update({ online: false }); });
         }
 
-        // Listeners em tempo real (Tarefas e Usuários)
         function setupRealtimeListeners() {
-            // Escuta Usuários Online (para a aba Equipe)
             db.collection('users').where('online', '==', true).onSnapshot((snapshot) => {
                 const activeUsers = [];
-                snapshot.forEach(doc => {
-                    if (doc.id !== currentUser.uid) {
-                        activeUsers.push(doc.data());
-                    }
-                });
+                snapshot.forEach(doc => { if (doc.id !== currentUser.uid) activeUsers.push(doc.data()); });
                 displayActiveUsers(activeUsers);
             });
-
-            // Escuta TODOS os usuários (para Gerenciamento de Permissões)
             db.collection('users').onSnapshot((snapshot) => {
                 const allUsers = [];
-                snapshot.forEach(doc => {
-                    allUsers.push({ id: doc.id, ...doc.data() });
-                });
+                snapshot.forEach(doc => { allUsers.push({ id: doc.id, ...doc.data() }); });
                 displayAllUsers(allUsers);
             });
-            
-            // Escuta as Tarefas
-            db.collection('tasks').where('date', '==', currentDate).onSnapshot(() => {
-                loadTasks();
-            });
+            db.collection('tasks').where('date', '==', currentDate).onSnapshot(() => { loadTasks(); });
         }
 
-        // Carrega Tarefas
         async function loadTasks() {
             try {
-                const tasksSnapshot = await db.collection('tasks')
-                    .where('date', '==', currentDate)
-                    .get();
-                
+                const tasksSnapshot = await db.collection('tasks').where('date', '==', currentDate).get();
                 const tasks = [];
-                tasksSnapshot.forEach(doc => {
-                    tasks.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // Ordenação feita pelo JavaScript
-                tasks.sort((a, b) => b.priorityValue - a.priorityValue);
-                
+                tasksSnapshot.forEach(doc => { tasks.push({ id: doc.id, ...doc.data() }); });
+                tasks.sort((a, b) => (b.priorityValue || 0) - (a.priorityValue || 0));
                 displayTasks(tasks);
-            } catch (error) {
-                console.error("Erro ao carregar tarefas:", error);
-                showNotification('Erro ao puxar tarefas. Verifique o console.', 'error');
-            }
+            } catch (error) { console.error("Erro ao carregar tarefas:", error); showNotification('Erro ao puxar tarefas.', 'error'); }
         }
 
-        // Exibe as Tarefas (Design Fino e Compacto)
         function displayTasks(tasks) {
             const container = document.getElementById('tasksList');
-            
             if (tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center bg-white border border-dashed border-gray-300 rounded-xl py-12 px-4">
-                        <div class="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-mug-hot text-2xl text-gray-400"></i>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-800">Nenhuma tarefa hoje</h3>
-                        <p class="text-sm text-gray-500 mt-1">Sua agenda está livre!</p>
-                    </div>`;
+                container.innerHTML = `<div class="text-center bg-white border border-dashed border-gray-300 rounded-xl py-12 px-4"><div class="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-mug-hot text-2xl text-gray-400"></i></div><h3 class="text-lg font-medium text-gray-800">Nenhuma tarefa hoje</h3><p class="text-sm text-gray-500 mt-1">Sua agenda está livre!</p></div>`;
                 return;
             }
-            
             container.innerHTML = tasks.map(task => `
-                <div class="task-card bg-white rounded-lg p-3 border border-gray-200 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col justify-between gap-2">
-                    
+                <div class="task-card bg-white rounded-lg p-3 border border-gray-200 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col justify-between gap-2" onclick="openViewModal('${task.id}')">
                     <div class="flex items-start justify-between gap-2 w-full">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h4 class="font-bold text-gray-800 text-sm sm:text-base leading-tight truncate">${escapeHtml(task.title)}</h4>
                                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${getPriorityBadge(task.priority)}">${task.priority}</span>
+                                ${task.completed ? '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700"><i class="fas fa-check"></i> Concluída</span>' : ''}
                             </div>
                             ${task.description ? `<p class="text-xs text-gray-500 mt-1 truncate">${escapeHtml(task.description)}</p>` : ''}
                         </div>
                     </div>
-                    
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between border-t border-gray-100 pt-2 mt-1 gap-2">
                         <div class="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
-                            <span><i class="fas fa-user mr-1"></i>${escapeHtml(task.createdBy.split(' ')[0])}</span>
+                            <span><i class="fas fa-user mr-1"></i>${escapeHtml((task.createdBy || '?').split(' ')[0])}</span>
                             ${task.assignedTo ? `<span class="text-blue-500"><i class="fas fa-at"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
                             ${task.activeUser ? `<span class="text-indigo-600 bg-indigo-50 px-1.5 rounded animate-pulse"><i class="fas fa-bolt text-yellow-500"></i> ${escapeHtml(task.activeUser.split(' ')[0])} fazendo</span>` : ''}
                         </div>
-                        
-                        <div class="flex items-center gap-2 self-end sm:self-auto">
+                        <div class="flex items-center gap-2 self-end sm:self-auto" onclick="event.stopPropagation()">
                             ${!task.completed ? `
-                                <button onclick="startTask('${task.id}')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition">
-                                    <i class="fas fa-play text-[10px]"></i> Iniciar
-                                </button>
-                                <button onclick="completeTask('${task.id}')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 shadow-sm transition">
-                                    <i class="fas fa-check text-[10px]"></i> Fechar
-                                </button>
-                            ` : `
-                                <span class="text-green-600 text-xs font-bold flex items-center gap-1">
-                                    <i class="fas fa-check-double"></i> Concluído
-                                </span>
-                            `}
+                                <button onclick="startTask('${task.id}')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition"><i class="fas fa-play text-[10px]"></i> Iniciar</button>
+                                <button onclick="completeTask('${task.id}')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 shadow-sm transition"><i class="fas fa-check text-[10px]"></i> Fechar</button>
+                            ` : `<span class="text-green-600 text-xs font-bold flex items-center gap-1"><i class="fas fa-check-double"></i> Concluído</span>`}
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Função Iniciar Tarefa
         async function startTask(taskId) {
             try {
                 await db.collection('tasks').doc(taskId).update({
                     activeUser: currentUser.displayName || currentUser.email.split('@')[0],
                     activeStart: firebase.firestore.FieldValue.serverTimestamp()
                 });
-            } catch (error) { 
-                showNotification('Erro ao iniciar', 'error'); 
-            }
+                showNotification('Tarefa iniciada!', 'success');
+            } catch (error) { showNotification('Erro ao iniciar', 'error'); }
         }
 
-        // Função Concluir Tarefa
         async function completeTask(taskId) {
             try {
                 await db.collection('tasks').doc(taskId).update({
@@ -503,126 +495,213 @@
                     activeUser: null
                 });
                 showNotification('Tarefa Concluída! 🎉', 'success');
-            } catch (error) { 
-                showNotification('Erro ao concluir', 'error'); 
-            }
+            } catch (error) { showNotification('Erro ao concluir', 'error'); }
         }
 
-        // Criar Nova Tarefa
+        // ========== MODAL DE VISUALIZAÇÃO E COMENTÁRIOS ==========
+        async function openViewModal(taskId) {
+            currentViewTaskId = taskId;
+            const doc = await db.collection('tasks').doc(taskId).get();
+            if (!doc.exists) return;
+            const task = { id: doc.id, ...doc.data() };
+            
+            document.getElementById('viewTaskTitle').innerHTML = escapeHtml(task.title);
+            document.getElementById('viewTaskDesc').innerText = task.description || 'Sem descrição';
+            document.getElementById('viewPriority').innerText = task.priority || 'média';
+            document.getElementById('viewDate').innerText = task.date;
+            document.getElementById('viewCreatedBy').innerText = task.createdBy || 'Anônimo';
+            document.getElementById('viewAssignedTo').innerText = task.assignedTo || 'Ninguém';
+            
+            const completedSpan = document.getElementById('completedSpan');
+            if (task.completed) {
+                completedSpan.classList.remove('hidden');
+            } else {
+                completedSpan.classList.add('hidden');
+            }
+            
+            document.getElementById('viewModal').classList.remove('hidden');
+            document.getElementById('viewModal').classList.add('flex');
+            
+            // Carregar comentários em tempo real
+            if (currentCommentsUnsubscribe) currentCommentsUnsubscribe();
+            currentCommentsUnsubscribe = db.collection('tasks').doc(taskId).collection('comments').orderBy('createdAt', 'asc').onSnapshot(snapshot => {
+                const comments = [];
+                snapshot.forEach(docC => comments.push({ id: docC.id, ...docC.data() }));
+                renderComments(comments);
+            });
+        }
+        
+        function renderComments(comments) {
+            const container = document.getElementById('commentsList');
+            document.getElementById('commentsCount').innerText = comments.length;
+            if (comments.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">Nenhum comentário ainda. Seja o primeiro!</div>';
+                return;
+            }
+            container.innerHTML = comments.map(c => `
+                <div class="comment-bubble">
+                    <div class="flex justify-between items-start">
+                        <span class="font-semibold text-xs text-indigo-700">${escapeHtml(c.userName)}</span>
+                        <span class="text-[10px] text-gray-400">${c.createdAt ? new Date(c.createdAt.toDate()).toLocaleString() : 'agora'}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-1 break-words">${escapeHtml(c.text)}</p>
+                </div>
+            `).join('');
+        }
+        
+        async function addCommentToCurrentTask() {
+            if (!currentViewTaskId) return;
+            const input = document.getElementById('newCommentInput');
+            const text = input.value.trim();
+            if (!text) return;
+            try {
+                await db.collection('tasks').doc(currentViewTaskId).collection('comments').add({
+                    text: text,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email.split('@')[0],
+                    userPhoto: currentUser.photoURL || '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                input.value = '';
+                showNotification('Comentário adicionado!', 'success');
+            } catch (e) { showNotification('Erro ao comentar', 'error'); }
+        }
+        
+        async function deleteCurrentTask() {
+            if (!currentViewTaskId) return;
+            if (confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) {
+                try {
+                    // Opcional: deletar também subcoleção de comentários (Firestore não deleta automaticamente)
+                    const commentsSnap = await db.collection('tasks').doc(currentViewTaskId).collection('comments').get();
+                    const batch = db.batch();
+                    commentsSnap.forEach(doc => { batch.delete(doc.ref); });
+                    batch.delete(db.collection('tasks').doc(currentViewTaskId));
+                    await batch.commit();
+                    
+                    showNotification('Tarefa excluída!', 'success');
+                    closeModal('viewModal');
+                    loadTasks();
+                } catch(e) { showNotification('Erro ao excluir', 'error'); }
+            }
+        }
+        
+        function openEditFromView() {
+            if (!currentViewTaskId) return;
+            closeModal('viewModal');
+            currentEditTaskId = currentViewTaskId;
+            db.collection('tasks').doc(currentViewTaskId).get().then(doc => {
+                if (doc.exists) {
+                    const task = doc.data();
+                    document.getElementById('modalTitle').innerText = 'Editar Tarefa';
+                    document.getElementById('taskTitle').value = task.title || '';
+                    document.getElementById('taskDesc').value = task.description || '';
+                    document.getElementById('taskPriority').value = task.priority || 'media';
+                    document.getElementById('inviteEmail').value = task.assignedTo || '';
+                    document.getElementById('saveTaskBtn').innerHTML = '<i class="fas fa-pen"></i> Atualizar Tarefa';
+                    document.getElementById('taskModal').classList.remove('hidden');
+                    document.getElementById('taskModal').classList.add('flex');
+                }
+            });
+        }
+        
+        async function updateTask(taskId) {
+            const title = document.getElementById('taskTitle').value.trim();
+            if (!title) { showNotification('Título obrigatório!', 'error'); return; }
+            const priority = document.getElementById('taskPriority').value;
+            const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
+            try {
+                await db.collection('tasks').doc(taskId).update({
+                    title: title,
+                    description: document.getElementById('taskDesc').value.trim(),
+                    priority: priority,
+                    priorityValue: priorityValue,
+                    assignedTo: document.getElementById('inviteEmail').value.trim() || null
+                });
+                showNotification('Tarefa atualizada!', 'success');
+                closeModal('taskModal');
+                resetModalToCreate();
+                loadTasks();
+                currentEditTaskId = null;
+            } catch(e) { showNotification('Erro ao atualizar', 'error'); }
+        }
+        
+        function resetModalToCreate() {
+            document.getElementById('modalTitle').innerText = 'Criar Nova Tarefa';
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDesc').value = '';
+            document.getElementById('taskPriority').value = 'media';
+            document.getElementById('inviteEmail').value = '';
+            document.getElementById('saveTaskBtn').innerHTML = '<i class="fas fa-check"></i> Salvar Tarefa';
+            currentEditTaskId = null;
+        }
+        
+        function handleSaveTask() {
+            if (currentEditTaskId) {
+                updateTask(currentEditTaskId);
+            } else {
+                createTask();
+            }
+        }
+        
         async function createTask() {
             const title = document.getElementById('taskTitle').value.trim();
             const desc = document.getElementById('taskDesc').value.trim();
             const priority = document.getElementById('taskPriority').value;
             const inviteEmail = document.getElementById('inviteEmail').value.trim();
-            
-            if (!title) {
-                showNotification('O título é obrigatório!', 'error');
-                document.getElementById('taskTitle').focus();
-                return;
-            }
-            
+            if (!title) { showNotification('O título é obrigatório!', 'error'); return; }
             const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
-            
             try {
-                const btn = document.querySelector('#taskModal button');
+                const btn = document.getElementById('saveTaskBtn');
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
                 btn.disabled = true;
-
                 await db.collection('tasks').add({
-                    title: title,
-                    description: desc,
-                    priority: priority,
-                    priorityValue: priorityValue,
-                    date: currentDate,
-                    createdBy: currentUser.displayName || currentUser.email.split('@')[0],
-                    createdByUid: currentUser.uid,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    completed: false,
-                    assignedTo: inviteEmail || null,
-                    activeUser: null
+                    title: title, description: desc, priority: priority, priorityValue: priorityValue,
+                    date: currentDate, createdBy: currentUser.displayName || currentUser.email.split('@')[0],
+                    createdByUid: currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    completed: false, assignedTo: inviteEmail || null, activeUser: null
                 });
-                
                 closeModal('taskModal');
-                
-                // Limpa os campos
-                document.getElementById('taskTitle').value = '';
-                document.getElementById('taskDesc').value = '';
-                document.getElementById('inviteEmail').value = '';
-                document.getElementById('taskPriority').value = 'media';
-                
-                btn.innerHTML = '<i class="fas fa-check"></i> Salvar Tarefa';
-                btn.disabled = false;
-                
+                resetModalToCreate();
                 showNotification('Tarefa criada com sucesso!', 'success');
-                loadTasks(); 
-                
-            } catch (error) {
-                console.error(error);
-                showNotification('Erro ao salvar. Verifique o banco de dados.', 'error');
-                document.querySelector('#taskModal button').disabled = false;
-            }
+                loadTasks();
+            } catch (error) { showNotification('Erro ao salvar.', 'error'); }
+            finally { document.getElementById('saveTaskBtn').disabled = false; }
         }
 
-        // Upload de Arquivos
+        // Upload de Arquivos (igual ao original)
         async function uploadFiles(input) {
             const files = Array.from(input.files);
-            
             if (files.length === 0) return;
-            
             showNotification('Fazendo upload...', 'success');
-            
             for (const file of files) {
                 try {
                     const storageRef = storage.ref(`files/${currentDate}/${Date.now()}_${file.name}`);
                     await storageRef.put(file);
                     const url = await storageRef.getDownloadURL();
-                    
                     await db.collection('files').add({
-                        name: file.name,
-                        url: url,
-                        size: file.size,
-                        type: file.type,
+                        name: file.name, url: url, size: file.size, type: file.type,
                         uploadedBy: currentUser.displayName || currentUser.email.split('@')[0],
-                        uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        date: currentDate
+                        uploadedAt: firebase.firestore.FieldValue.serverTimestamp(), date: currentDate
                     });
-                } catch (error) { 
-                    showNotification(`Erro no arquivo ${file.name}`, 'error'); 
-                }
+                } catch (error) { showNotification(`Erro no arquivo ${file.name}`, 'error'); }
             }
             showNotification(`Upload concluído!`, 'success');
             loadFiles();
-            input.value = ''; 
+            input.value = '';
         }
 
-        // Carrega Arquivos
         async function loadFiles() {
             try {
-                const filesSnapshot = await db.collection('files')
-                    .orderBy('uploadedAt', 'desc')
-                    .limit(20)
-                    .get();
-                    
+                const filesSnapshot = await db.collection('files').orderBy('uploadedAt', 'desc').limit(20).get();
                 const files = [];
-                filesSnapshot.forEach(doc => { 
-                    files.push({ id: doc.id, ...doc.data() }); 
-                });
-                
+                filesSnapshot.forEach(doc => { files.push({ id: doc.id, ...doc.data() }); });
                 displayFiles(files);
-            } catch(error) { 
-                console.error(error); 
-            }
+            } catch(error) { console.error(error); }
         }
 
-        // Exibe Arquivos
         function displayFiles(files) {
             const container = document.getElementById('filesList');
-            
-            if (files.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Nenhum arquivo no cofre ainda.</div>';
-                return;
-            }
-            
+            if (files.length === 0) { container.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Nenhum arquivo no cofre ainda.</div>'; return; }
             container.innerHTML = files.map(file => `
                 <div class="bg-gray-50 border border-gray-200 hover:border-blue-300 rounded-xl p-3 flex justify-between items-center transition">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -641,27 +720,14 @@
             `).join('');
         }
 
-        // Exibe Usuários Online
         function displayActiveUsers(users) {
             const container = document.getElementById('activeUsersList');
-            
-            if (users.length === 0) {
-                container.innerHTML = '<div class="w-full text-center text-gray-500 py-4 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Só você está online.</div>';
-                return;
-            }
-            
-            container.innerHTML = users.map(user => `
-                <span class="bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-                    <i class="fas fa-circle text-[8px] text-green-500 animate-pulse"></i>
-                    ${escapeHtml(user.name || user.email.split('@')[0])}
-                </span>
-            `).join('');
+            if (users.length === 0) { container.innerHTML = '<div class="w-full text-center text-gray-500 py-4 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Só você está online.</div>'; return; }
+            container.innerHTML = users.map(user => `<span class="bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm"><i class="fas fa-circle text-[8px] text-green-500 animate-pulse"></i> ${escapeHtml(user.name || user.email.split('@')[0])}</span>`).join('');
         }
 
-        // Exibe a Lista de TODOS os Usuários com Toggle
         function displayAllUsers(users) {
             const container = document.getElementById('allUsersList');
-            
             container.innerHTML = users.map(user => `
                 <div class="flex items-center justify-between bg-gray-50 border border-gray-100 hover:border-indigo-100 rounded-lg p-3 transition">
                     <div class="flex items-center gap-3 min-w-0">
@@ -682,39 +748,21 @@
             `).join('');
         }
 
-        // Alterna o acesso global do usuário no banco de dados
         async function toggleUserAccess(userId, isChecked) {
             try {
-                await db.collection('users').doc(userId).update({ 
-                    globalAccess: isChecked 
-                });
+                await db.collection('users').doc(userId).update({ globalAccess: isChecked });
                 showNotification(isChecked ? 'Acesso total concedido!' : 'Acesso total removido.', 'success');
-            } catch(error) {
-                showNotification('Erro ao alterar acesso.', 'error');
-                console.error(error);
-            }
+            } catch(error) { showNotification('Erro ao alterar acesso.', 'error'); }
         }
 
-        // Login
         async function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-                await firebase.auth().signInWithPopup(provider);
-            } catch (error) {
-                if (error.code === 'auth/popup-blocked') {
-                    await firebase.auth().signInWithRedirect(provider);
-                } else { 
-                    showNotification('Erro no login.', 'error'); 
-                }
-            }
+            try { await firebase.auth().signInWithPopup(provider); } 
+            catch (error) { if (error.code === 'auth/popup-blocked') await firebase.auth().signInWithRedirect(provider); else showNotification('Erro no login.', 'error'); }
         }
 
-        // Logout
-        function logout() { 
-            auth.signOut(); 
-        }
+        function logout() { auth.signOut(); }
 
-        // Mudar Data
         function changeDate(delta) {
             const [year, month, day] = currentDate.split('-');
             const date = new Date(year, month - 1, day);
@@ -724,8 +772,8 @@
             loadTasks();
         }
 
-        // Abrir/Fechar Modal
         function showAddTaskModal() {
+            resetModalToCreate();
             document.getElementById('taskModal').classList.remove('hidden');
             document.getElementById('taskModal').classList.add('flex');
             setTimeout(() => document.getElementById('taskTitle').focus(), 100);
@@ -734,73 +782,24 @@
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
             document.getElementById(modalId).classList.remove('flex');
+            if (modalId === 'viewModal' && currentCommentsUnsubscribe) {
+                currentCommentsUnsubscribe();
+                currentCommentsUnsubscribe = null;
+                currentViewTaskId = null;
+            }
         }
 
-        // Utilitários
-        function getPriorityColor(priority) { 
-            return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500'; 
-        }
-        
-        function getPriorityBadge(priority) { 
-            return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700'; 
-        }
-        
-        function getFileIcon(type) {
-            if (!type) return 'fa-file text-gray-400';
-            if (type.includes('pdf')) return 'fa-file-pdf text-red-500';
-            if (type.includes('image')) return 'fa-image text-blue-500';
-            if (type.includes('excel') || type.includes('spreadsheet') || type.includes('csv')) return 'fa-file-excel text-green-600';
-            if (type.includes('word') || type.includes('document')) return 'fa-file-word text-blue-700';
-            if (type.includes('zip') || type.includes('compressed')) return 'fa-file-archive text-yellow-600';
-            return 'fa-file-alt text-gray-500';
-        }
+        function getPriorityColor(priority) { return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500'; }
+        function getPriorityBadge(priority) { return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700'; }
+        function getFileIcon(type) { if (!type) return 'fa-file text-gray-400'; if (type.includes('pdf')) return 'fa-file-pdf text-red-500'; if (type.includes('image')) return 'fa-image text-blue-500'; if (type.includes('excel')) return 'fa-file-excel text-green-600'; if (type.includes('word')) return 'fa-file-word text-blue-700'; return 'fa-file-alt text-gray-500'; }
+        function formatFileSize(bytes) { if (bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
+        function showNotification(message, type) { const notification = document.createElement('div'); notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-6 py-3 rounded-xl shadow-lg font-medium flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white text-sm w-[90%] max-w-sm`; notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> <span>${message}</span>`; document.body.appendChild(notification); notification.animate([{ opacity: 0, transform: 'translateY(-20px) translateX(-50%)' }, { opacity: 1, transform: 'translateY(0) translateX(-50%)' }], { duration: 300, fill: 'forwards' }); setTimeout(() => { notification.style.opacity = '0'; setTimeout(() => notification.remove(), 300); }, 3000); }
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-6 py-3 rounded-xl shadow-lg font-medium flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white text-sm w-[90%] max-w-sm`;
-            notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> <span>${message}</span>`;
-            
-            document.body.appendChild(notification);
-            
-            notification.animate([ 
-                { opacity: 0, transform: 'translateY(-20px) translateX(-50%)' }, 
-                { opacity: 1, transform: 'translateY(0) translateX(-50%)' } 
-            ], { duration: 300, fill: 'forwards' });
-            
-            setTimeout(() => { 
-                notification.style.opacity = '0'; 
-                setTimeout(() => notification.remove(), 300); 
-            }, 3000);
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Eventos de Inicialização
         document.getElementById('datePicker').value = currentDate;
-        
-        document.getElementById('datePicker').addEventListener('change', (e) => {
-            if(e.target.value) { 
-                currentDate = e.target.value; 
-                loadTasks(); 
-            }
-        });
-
-        document.getElementById('taskModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('taskModal')) {
-                closeModal('taskModal');
-            }
-        });
+        document.getElementById('datePicker').addEventListener('change', (e) => { if(e.target.value) { currentDate = e.target.value; loadTasks(); } });
+        document.getElementById('taskModal').addEventListener('click', (e) => { if (e.target === document.getElementById('taskModal')) closeModal('taskModal'); });
+        document.getElementById('viewModal').addEventListener('click', (e) => { if (e.target === document.getElementById('viewModal')) closeModal('viewModal'); });
     </script>
 </body>
 </html>
