@@ -1,325 +1,445 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarketPlace Premium</title>
-
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Firebase Scripts (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Gerador Inteligente de Relatórios | Auto-Completar</title>
+    <!-- TailwindCSS v3 + Font Awesome + Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #f4f7fc; }
+        /* Animações suaves */
+        .transition-smooth { transition: all 0.2s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1); }
+        /* Scroll personalizado */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        /* Datalist / auto-suggest */
+        input:focus, textarea:focus, select:focus { outline: none; ring: 2px solid #3b82f6; }
+        .report-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .badge-type {
+            background: #eef2ff;
+            color: #1e3a8a;
+            font-weight: 600;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+        }
+        button:active { transform: scale(0.97); }
+    </style>
 </head>
+<body class="p-4 md:p-6">
 
-<body>
-
-    <!-- Loading Overlay -->
-    <div id="global-loading"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
-        <div class="spinner"
-            style="width:40px; height:40px; border:4px solid #f3f3f3; border-top:4px solid #2E7D32; border-radius:50%; animation:spin 1s linear infinite;">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3"><i class="fas fa-chart-line text-blue-600"></i> Gerador Inteligente de Relatórios</h1>
+                <p class="text-slate-500 mt-1 text-sm">Campos com auto-sugestão baseada em entradas anteriores • Relatórios rápidos e completos</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="btnNovoRelatorio" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition flex items-center gap-2 text-sm font-medium"><i class="fas fa-plus"></i> Novo Relatório</button>
+                <button id="btnExportarTudo" class="bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-md hover:bg-emerald-700 transition flex items-center gap-2 text-sm font-medium"><i class="fas fa-download"></i> Exportar Todos</button>
+            </div>
         </div>
-        <p id="loading-text" style="margin-top:15px; font-weight:500;">Carregando...</p>
-        <style>
-            @keyframes spin {
-                0% {
-                    transform: rotate(0deg);
-                }
 
-                100% {
-                    transform: rotate(360deg);
-                }
+        <!-- Área de criação do relatório -->
+        <div class="report-card p-5 mb-8 border border-gray-100">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h2 class="text-xl font-semibold text-slate-700"><i class="fas fa-pen-alt mr-2 text-blue-500"></i> Criar novo relatório</h2>
+                <div class="flex gap-2">
+                    <select id="tipoRelatorioSelect" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm">
+                        <option value="Exposição e Ação edredom">📋 Exposição e Ação edredom</option>
+                        <option value="Degustação de Doce Prestígio">🍬 Degustação de Doce Prestígio</option>
+                        <option value="Exposição Porta de Loja">🚪 Exposição Porta de Loja</option>
+                        <option value="Venda">💰 Venda</option>
+                        <option value="Análise Panasonic X Concorrência">📊 Análise Panasonic X Concorrência</option>
+                        <option value="Estoque Carrefour 110W">📦 Estoque Carrefour 110W</option>
+                        <option value="Introdução de Produto">✨ Introdução de Produto</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Campos dinâmicos com sugestão inteligente (datalist) -->
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Cód da ação / Tipo</label><input type="text" id="campoCodAcao" list="listaCodAcao" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Ex: ED_LET_01"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Rede</label><input type="text" id="campoRede" list="listaRedes" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Sipolatti, Fast Shop, Carrefour..."></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">ID</label><input type="text" id="campoId" list="listaIds" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="96138"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Filial</label><input type="text" id="campoFilial" list="listaFiliais" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="36 Shopping Vila Velha"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Cidade</label><input type="text" id="campoCidade" list="listaCidades" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Vila Velha"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Produtos</label><input type="text" id="campoProdutos" list="listaProdutos" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="NA-F190G1BA/NA-F150B1T"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Coordenador</label><input type="text" id="campoCoordenador" list="listaCoordenadores" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Rosangela Fregonassi"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Consultor(a)</label><input type="text" id="campoConsultor" list="listaConsultores" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Elane"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Regional</label><input type="text" id="campoRegional" list="listaRegionais" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Leste, SPC, Centro Oeste"></div>
+                <div><label class="block text-xs font-semibold text-gray-500 uppercase">Data</label><input type="date" id="campoData" class="w-full border rounded-lg p-2.5 text-sm mt-1"></div>
+            </div>
+            <!-- Campo extra para análises detalhadas (opcional) -->
+            <div class="mt-4">
+                <label class="block text-xs font-semibold text-gray-500 uppercase">Conteúdo extra / Observações (comparativos, estoques)</label>
+                <textarea id="campoExtra" rows="3" class="w-full border rounded-lg p-2.5 text-sm mt-1" placeholder="Ex: Geladeira BB64X2: R$4.749,00, CD:0, Concorrente Electrolux..."></textarea>
+            </div>
+            <div class="flex justify-end mt-5">
+                <button id="btnSalvarRelatorio" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 font-medium transition"><i class="fas fa-save"></i> Gerar & Armazenar Relatório</button>
+            </div>
+        </div>
+
+        <!-- Lista de relatórios gerados -->
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-xl font-bold text-slate-800"><i class="fas fa-folder-open mr-2 text-amber-600"></i> Relatórios gerados (<span id="contadorRelatorios">0</span>)</h2>
+            <button id="limparHistoricoBtn" class="text-red-500 text-sm hover:text-red-700 transition"><i class="fas fa-trash-alt"></i> Limpar histórico</button>
+        </div>
+        <div id="listaRelatorios" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- cards dinâmicos -->
+        </div>
+        <div id="semRelatoriosMsg" class="text-center text-gray-400 py-10 hidden">Nenhum relatório ainda. Crie um acima! 🚀</div>
+    </div>
+
+    <script>
+        // -------------------- ESTRUTURA DE DADOS + AUTOCOMPLETAR INTELIGENTE --------------------
+        // Chaves para armazenamento local
+        const STORAGE_REPORTS = "smart_reports_list";
+        const STORAGE_SUGGESTIONS = "smart_suggestions_map";
+
+        // Dicionário de sugestões: cada campo guarda um Set de valores únicos já utilizados
+        let suggestionsDB = {
+            codAcao: new Set(),
+            rede: new Set(),
+            id: new Set(),
+            filial: new Set(),
+            cidade: new Set(),
+            produtos: new Set(),
+            coordenador: new Set(),
+            consultor: new Set(),
+            regional: new Set(),
+            extra: new Set()   // Para observações também sugestões
+        };
+
+        // Relatórios armazenados
+        let relatorios = [];   // cada objeto: { tipo, codAcao, rede, id, filial, cidade, produtos, coordenador, consultor, regional, data, extra, timestamp }
+
+        // Inicialização: carregar dados do localStorage
+        function carregarDados() {
+            const savedReports = localStorage.getItem(STORAGE_REPORTS);
+            if(savedReports) {
+                try {
+                    relatorios = JSON.parse(savedReports);
+                } catch(e) { relatorios = []; }
+            } else {
+                // Dados iniciais de exemplo para demonstração (baseados nas legendas do usuário)
+                relatorios = [
+                    { tipo:"Exposição e Ação edredom", codAcao:"ED_LET_01", rede:"Sipolatti", id:"96138", filial:"36 Shopping Vila Velha", cidade:"Vila Velha", produtos:"NA-F190G1BA/NA-F150B1T", coordenador:"Rosangela Fregonassi", consultor:"Elane", regional:"Leste", data:"2026-04-04", extra:"" },
+                    { tipo:"Degustação de Doce Prestígio", codAcao:"", rede:"Fast Shop", id:"8215", filial:"FS- Barra Shopping", cidade:"Rio de Janeiro", produtos:"GB68QS", coordenador:"Anderson Duarte", consultor:"Fábio Rivelo", regional:"Leste", data:"2026-04-04", extra:"" },
+                    { tipo:"Exposição Porta de Loja", codAcao:"", rede:"Lojas Cem", id:"16805", filial:"148 - Carrão", cidade:"São Paulo - SP", produtos:"BT71W/F150W", coordenador:"Anderson Duarte", consultor:"Danielly Costa", regional:"SPC", data:"2026-04-07", extra:"" },
+                    { tipo:"Venda", codAcao:"", rede:"Carrefour", id:"7702", filial:"Shopping Eldorado", cidade:"São Paulo- SP", produtos:"ST27L", coordenador:"Anderson Duarte", consultor:"Márjory Sousa", regional:"SPC", data:"2026-04-07", extra:"" },
+                    { tipo:"Análise Panasonic X Concorrência", codAcao:"", rede:"Carrefour", id:"", filial:"Carrefour", cidade:"", produtos:"BB64X2, BB65GV7", coordenador:"", consultor:"", regional:"Centro Oeste", data:"2026-04-01", extra:"Geladeira: BB64X2 R$4.749,00 CD:0 concorrente Electrolux IB7S R$5.199; BB65GV7 R$5.599; Máquina Lavar NA-F150P1WB R$2.299 CD44..." },
+                    { tipo:"Estoque Carrefour 110W", codAcao:"", rede:"Carrefour", id:"", filial:"", cidade:"", produtos:"BB64X, BT44W, F150B1W", coordenador:"", consultor:"", regional:"SPC", data:"2026-04-04", extra:"BB64X R$4.799 CD❌; BT44W R$2.999 CD309; F150B1W R$2.299 CD❌; ST27L CD192" },
+                    { tipo:"Introdução de Produto", codAcao:"", rede:"Carrefour", id:"", filial:"Carrefour Vila Velha", cidade:"Vila Velha- ES", produtos:"BT44PV3XA", coordenador:"", consultor:"", regional:"", data:"2026-04-07", extra:"Preço: 3.149,90" }
+                ];
             }
-        </style>
-    </div>
 
-    <!-- Header -->
-    <header>
-        <div class="container header-content">
-            <a href="#" class="logo" onclick="showPage('home'); return false;">
-                <i class="fas fa-store"></i>
-                <span>MarketPlace</span>
-            </a>
-            <div class="user-info">
-                <span id="user-greeting" class="user-name-span">Visitante</span>
-                <div class="user-avatar" id="user-avatar">
-                    <i class="fas fa-user"></i>
-                </div>
-            </div>
-        </div>
-    </header>
+            const savedSuggestions = localStorage.getItem(STORAGE_SUGGESTIONS);
+            if(savedSuggestions) {
+                try {
+                    const parsed = JSON.parse(savedSuggestions);
+                    for(let key in suggestionsDB) {
+                        if(parsed[key] && Array.isArray(parsed[key])) {
+                            suggestionsDB[key] = new Set(parsed[key]);
+                        }
+                    }
+                } catch(e) {}
+            }
 
-    <!-- Navigation -->
-    <nav class="main-nav">
-        <ul class="nav-list">
-            <li><a href="#" id="nav-home" class="active"><i class="fas fa-home"></i> Início</a></li>
-            <li><a href="#" id="nav-products"><i class="fas fa-box"></i> Produtos</a></li>
-            <li><a href="#" id="nav-stores"><i class="fas fa-store"></i> Lojas</a></li>
-            <li><a href="#" id="nav-my-store"><i class="fas fa-store-alt"></i> Minha Loja</a></li>
-            <li><a href="#" id="nav-add-product"><i class="fas fa-plus-circle"></i> Vender</a></li>
-        </ul>
-    </nav>
+            // Atualiza sugestões com base nos relatórios carregados (para garantir consistência)
+            relatorios.forEach(rep => {
+                adicionarSugestoesDeRelatorio(rep);
+            });
+            atualizarTodasDatalists();
+            renderizarRelatorios();
+        }
 
-    <!-- Main Content -->
-    <div class="container">
+        function adicionarSugestoesDeRelatorio(rel) {
+            if(rel.codAcao && rel.codAcao.trim()) suggestionsDB.codAcao.add(rel.codAcao.trim());
+            if(rel.rede && rel.rede.trim()) suggestionsDB.rede.add(rel.rede.trim());
+            if(rel.id && rel.id.trim()) suggestionsDB.id.add(rel.id.trim());
+            if(rel.filial && rel.filial.trim()) suggestionsDB.filial.add(rel.filial.trim());
+            if(rel.cidade && rel.cidade.trim()) suggestionsDB.cidade.add(rel.cidade.trim());
+            if(rel.produtos && rel.produtos.trim()) suggestionsDB.produtos.add(rel.produtos.trim());
+            if(rel.coordenador && rel.coordenador.trim()) suggestionsDB.coordenador.add(rel.coordenador.trim());
+            if(rel.consultor && rel.consultor.trim()) suggestionsDB.consultor.add(rel.consultor.trim());
+            if(rel.regional && rel.regional.trim()) suggestionsDB.regional.add(rel.regional.trim());
+            if(rel.extra && rel.extra.trim()) suggestionsDB.extra.add(rel.extra.trim());
+        }
 
-        <!-- Alerts -->
-        <div id="global-alert" class="alert hidden"></div>
+        function salvarSuggestionsStorage() {
+            let toStore = {};
+            for(let key in suggestionsDB) {
+                toStore[key] = Array.from(suggestionsDB[key]);
+            }
+            localStorage.setItem(STORAGE_SUGGESTIONS, JSON.stringify(toStore));
+        }
 
-        <!-- Login Page -->
-        <div id="login-page" class="page">
-            <div class="card" style="max-width: 400px; margin: 40px auto;">
-                <h2 class="page-title" style="justify-content: center;"><i class="fas fa-sign-in-alt"></i> Entrar</h2>
-                <div id="login-alert" class="alert hidden"></div>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label>E-mail</label>
-                        <input type="email" id="login-email" class="form-control" placeholder="seu@email.com" required>
+        function atualizarTodasDatalists() {
+            atualizarDatalist("listaCodAcao", suggestionsDB.codAcao);
+            atualizarDatalist("listaRedes", suggestionsDB.rede);
+            atualizarDatalist("listaIds", suggestionsDB.id);
+            atualizarDatalist("listaFiliais", suggestionsDB.filial);
+            atualizarDatalist("listaCidades", suggestionsDB.cidade);
+            atualizarDatalist("listaProdutos", suggestionsDB.produtos);
+            atualizarDatalist("listaCoordenadores", suggestionsDB.coordenador);
+            atualizarDatalist("listaConsultores", suggestionsDB.consultor);
+            atualizarDatalist("listaRegionais", suggestionsDB.regional);
+        }
+
+        function atualizarDatalist(datalistId, setValores) {
+            let datalist = document.getElementById(datalistId);
+            if(!datalist) {
+                // criar dinamicamente se não existir
+                datalist = document.createElement("datalist");
+                datalist.id = datalistId;
+                document.body.appendChild(datalist);
+            }
+            datalist.innerHTML = "";
+            const arr = Array.from(setValores).sort();
+            arr.forEach(val => {
+                let option = document.createElement("option");
+                option.value = val;
+                datalist.appendChild(option);
+            });
+        }
+
+        function salvarRelatoriosStorage() {
+            localStorage.setItem(STORAGE_REPORTS, JSON.stringify(relatorios));
+        }
+
+        // Função que coleta dados do formulário e gera novo relatório
+        function coletarFormulario() {
+            const tipoSelect = document.getElementById("tipoRelatorioSelect").value;
+            const codAcao = document.getElementById("campoCodAcao").value.trim();
+            const rede = document.getElementById("campoRede").value.trim();
+            const id = document.getElementById("campoId").value.trim();
+            const filial = document.getElementById("campoFilial").value.trim();
+            const cidade = document.getElementById("campoCidade").value.trim();
+            const produtos = document.getElementById("campoProdutos").value.trim();
+            const coordenador = document.getElementById("campoCoordenador").value.trim();
+            const consultor = document.getElementById("campoConsultor").value.trim();
+            const regional = document.getElementById("campoRegional").value.trim();
+            let data = document.getElementById("campoData").value;
+            if(!data) {
+                const hoje = new Date().toISOString().slice(0,10);
+                data = hoje;
+            }
+            const extra = document.getElementById("campoExtra").value.trim();
+
+            // Validação simples: pelo menos rede ou tipo visível
+            if(!rede && !codAcao && !produtos && !extra) {
+                alert("Preencha ao menos um campo relevante (Rede, Produtos ou Código) para gerar o relatório.");
+                return null;
+            }
+
+            const novoRelatorio = {
+                tipo: tipoSelect,
+                codAcao,
+                rede,
+                id,
+                filial,
+                cidade,
+                produtos,
+                coordenador,
+                consultor,
+                regional,
+                data,
+                extra,
+                timestamp: Date.now()
+            };
+            return novoRelatorio;
+        }
+
+        function limparFormulario() {
+            document.getElementById("campoCodAcao").value = "";
+            document.getElementById("campoRede").value = "";
+            document.getElementById("campoId").value = "";
+            document.getElementById("campoFilial").value = "";
+            document.getElementById("campoCidade").value = "";
+            document.getElementById("campoProdutos").value = "";
+            document.getElementById("campoCoordenador").value = "";
+            document.getElementById("campoConsultor").value = "";
+            document.getElementById("campoRegional").value = "";
+            document.getElementById("campoData").value = "";
+            document.getElementById("campoExtra").value = "";
+            // reset tipo select para padrão, mas mantém
+        }
+
+        function adicionarRelatorio(relatorio) {
+            if(!relatorio) return;
+            relatorios.unshift(relatorio); // mais recente primeiro
+            adicionarSugestoesDeRelatorio(relatorio);
+            salvarSuggestionsStorage();
+            atualizarTodasDatalists();
+            salvarRelatoriosStorage();
+            renderizarRelatorios();
+            limparFormulario();
+        }
+
+        function renderizarRelatorios() {
+            const container = document.getElementById("listaRelatorios");
+            const contadorSpan = document.getElementById("contadorRelatorios");
+            const msgVazia = document.getElementById("semRelatoriosMsg");
+            contadorSpan.innerText = relatorios.length;
+            if(relatorios.length === 0) {
+                container.innerHTML = "";
+                msgVazia.classList.remove("hidden");
+                return;
+            }
+            msgVazia.classList.add("hidden");
+            container.innerHTML = "";
+            relatorios.forEach((rel, idx) => {
+                const card = document.createElement("div");
+                card.className = "report-card p-5 border border-gray-100 hover:shadow-md transition-smooth";
+                // Badge com tipo
+                let badgeHtml = `<div class="badge-type inline-block mb-3"><i class="far fa-file-alt mr-1"></i> ${escapeHtml(rel.tipo)}</div>`;
+                let dataFormatada = rel.data ? new Date(rel.data).toLocaleDateString('pt-BR') : "Data não informada";
+                let detalhes = `
+                    <div class="space-y-2 text-sm">
+                        ${rel.codAcao ? `<div><span class="font-semibold text-gray-600">Cód ação:</span> ${escapeHtml(rel.codAcao)}</div>` : ''}
+                        ${rel.rede ? `<div><span class="font-semibold text-gray-600">Rede:</span> ${escapeHtml(rel.rede)}</div>` : ''}
+                        ${rel.id ? `<div><span class="font-semibold text-gray-600">ID:</span> ${escapeHtml(rel.id)}</div>` : ''}
+                        ${rel.filial ? `<div><span class="font-semibold text-gray-600">Filial:</span> ${escapeHtml(rel.filial)}</div>` : ''}
+                        ${rel.cidade ? `<div><span class="font-semibold text-gray-600">Cidade:</span> ${escapeHtml(rel.cidade)}</div>` : ''}
+                        ${rel.produtos ? `<div><span class="font-semibold text-gray-600">Produtos:</span> ${escapeHtml(rel.produtos)}</div>` : ''}
+                        ${rel.coordenador ? `<div><span class="font-semibold text-gray-600">Coordenador:</span> ${escapeHtml(rel.coordenador)}</div>` : ''}
+                        ${rel.consultor ? `<div><span class="font-semibold text-gray-600">Consultor(a):</span> ${escapeHtml(rel.consultor)}</div>` : ''}
+                        ${rel.regional ? `<div><span class="font-semibold text-gray-600">Regional:</span> ${escapeHtml(rel.regional)}</div>` : ''}
+                        <div><span class="font-semibold text-gray-600">Data:</span> ${dataFormatada}</div>
+                        ${rel.extra ? `<div class="mt-2 pt-2 border-t border-gray-100"><span class="font-semibold text-gray-600">Observações/Análise:</span><p class="text-gray-700 text-xs whitespace-pre-line mt-1">${escapeHtml(rel.extra)}</p></div>` : ''}
                     </div>
-                    <div class="form-group">
-                        <label>Senha</label>
-                        <input type="password" id="login-password" class="form-control" placeholder="******" required>
+                `;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        ${badgeHtml}
+                        <button class="removerRelatorio text-gray-400 hover:text-red-500 transition" data-index="${idx}"><i class="fas fa-trash-alt"></i></button>
                     </div>
-                    <button type="submit" class="btn">Entrar</button>
-                    <button type="button" id="show-register" class="btn btn-secondary">Criar Nova Conta</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Register Page -->
-        <div id="register-page" class="page">
-            <div class="card" style="max-width: 400px; margin: 40px auto;">
-                <h2 class="page-title" style="justify-content: center;"><i class="fas fa-user-plus"></i> Cadastro</h2>
-                <div id="register-alert" class="alert hidden"></div>
-                <form id="register-form">
-                    <div class="form-group">
-                        <label>Nome Completo</label>
-                        <input type="text" id="register-name" class="form-control" required>
+                    ${detalhes}
+                    <div class="mt-4 flex justify-end">
+                        <button class="copiarRelatorioBtn text-blue-500 text-xs bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition" data-texto="${escapeHtml(formatarRelatorioTexto(rel))}"><i class="far fa-copy"></i> Copiar</button>
                     </div>
-                    <div class="form-group">
-                        <label>E-mail</label>
-                        <input type="email" id="register-email" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Senha</label>
-                        <input type="password" id="register-password" class="form-control" required minlength="6">
-                    </div>
-                    <button type="submit" class="btn">Cadastrar</button>
-                    <button type="button" id="show-login" class="btn btn-secondary">Já tenho conta</button>
-                </form>
-            </div>
-        </div>
+                `;
+                container.appendChild(card);
+            });
+            // Eventos remoção e copiar
+            document.querySelectorAll(".removerRelatorio").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const idx = btn.getAttribute("data-index");
+                    if(idx !== null) removerRelatorio(parseInt(idx));
+                });
+            });
+            document.querySelectorAll(".copiarRelatorioBtn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const texto = btn.getAttribute("data-texto");
+                    if(texto) {
+                        navigator.clipboard.writeText(texto);
+                        mostrarToast("Relatório copiado para área de transferência!");
+                    }
+                });
+            });
+        }
 
-        <!-- Home Page -->
-        <div id="home-page" class="page active">
-            <h2 class="page-title">Destaques</h2>
-            <div id="featured-products" class="products-grid">
-                <!-- Skeletons injected by JS -->
-            </div>
-        </div>
+        function formatarRelatorioTexto(rel) {
+            let lines = [];
+            lines.push(`*Tipo:* ${rel.tipo}`);
+            if(rel.codAcao) lines.push(`*Cód da ação* ${rel.codAcao}`);
+            if(rel.rede) lines.push(`*Rede:* ${rel.rede}`);
+            if(rel.id) lines.push(`*ID:* ${rel.id}`);
+            if(rel.filial) lines.push(`*Filial:* ${rel.filial}`);
+            if(rel.cidade) lines.push(`*Cidade:* ${rel.cidade}`);
+            if(rel.produtos) lines.push(`*Produtos:* ${rel.produtos}`);
+            if(rel.coordenador) lines.push(`*Coordenador:* ${rel.coordenador}`);
+            if(rel.consultor) lines.push(`*Consultora:* ${rel.consultor}`);
+            if(rel.regional) lines.push(`*Regional:* ${rel.regional}`);
+            if(rel.data) lines.push(`*Data:* ${new Date(rel.data).toLocaleDateString('pt-BR')}`);
+            if(rel.extra) lines.push(`*Observações:* ${rel.extra}`);
+            return lines.join("\n");
+        }
 
-        <!-- Products Page -->
-        <div id="products-page" class="page">
-            <h2 class="page-title">Todos os Produtos</h2>
-            <div class="search-container" style="position:relative; margin-bottom:20px;">
-                <div class="input-wrapper" style="position:relative;">
-                    <i class="fas fa-search"
-                        style="position:absolute; left:15px; top:50%; transform:translateY(-50%); color:#aaa;"></i>
-                    <input type="text" id="search-products" class="form-control" placeholder="O que você procura hoje?"
-                        style="padding-left: 40px; border-radius: 25px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                </div>
-                <div id="search-suggestions" class="search-suggestions hidden"></div>
-            </div>
+        function removerRelatorio(index) {
+            if(index >= 0 && index < relatorios.length) {
+                relatorios.splice(index,1);
+                salvarRelatoriosStorage();
+                // Reconstruir sugestões completas a partir dos relatórios atuais (evitar órfãos)
+                for(let key in suggestionsDB) suggestionsDB[key].clear();
+                relatorios.forEach(rep => adicionarSugestoesDeRelatorio(rep));
+                salvarSuggestionsStorage();
+                atualizarTodasDatalists();
+                renderizarRelatorios();
+                mostrarToast("Relatório removido.");
+            }
+        }
 
-            <div id="filter-scroll-container" class="filter-chips-container"
-                style="margin-bottom: 25px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; -webkit-overflow-scrolling: touch; cursor: grab;">
-                <button class="chip active" onclick="filterByCategory('all')">Todos</button>
-                <button class="chip" onclick="filterByCategory('Roupas')">Roupas</button>
-                <button class="chip" onclick="filterByCategory('Eletrônicos')">Eletrônicos</button>
-                <button class="chip" onclick="filterByCategory('Casa')">Casa</button>
-                <button class="chip" onclick="filterByCategory('Beleza')">Beleza</button>
-                <button class="chip" onclick="filterByCategory('Esportes')">Esportes</button>
-                <button class="chip" onclick="filterByCategory('Brinquedos')">Brinquedos</button>
-                <button class="chip" onclick="filterByCategory('Livros')">Livros</button>
-                <button class="chip" onclick="filterByCategory('Automotivo')">Automotivo</button>
-                <button class="chip" onclick="filterByCategory('Pet Shop')">Pet Shop</button>
-                <button class="chip" onclick="filterByCategory('Games')">Games</button>
-                <button class="chip" onclick="filterByCategory('Comidas')">Comidas</button>
-                <button class="chip" onclick="filterByCategory('Doces')">Doces</button>
-                <button class="chip" onclick="filterByCategory('Bebidas')">Bebidas</button>
-            </div>
-            <div id="products-list" class="products-grid"></div>
-        </div>
+        function exportarTodosRelatorios() {
+            if(relatorios.length === 0) {
+                alert("Nenhum relatório para exportar.");
+                return;
+            }
+            let conteudo = "RELATÓRIOS GERADOS - SISTEMA INTELIGENTE\n\n";
+            relatorios.forEach((rel, i) => {
+                conteudo += `[RELATÓRIO ${i+1}]\n`;
+                conteudo += formatarRelatorioTexto(rel);
+                conteudo += "\n-----------------------------------\n\n";
+            });
+            const blob = new Blob([conteudo], {type: "text/plain;charset=utf-8"});
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = `relatorios_${new Date().toISOString().slice(0,19)}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            mostrarToast("Exportação concluída!");
+        }
 
-        <!-- Stores Page -->
-        <div id="stores-page" class="page">
-            <h2 class="page-title">Lojas Parceiras</h2>
-            <div id="stores-list"></div>
-        </div>
+        function limparHistorico() {
+            if(confirm("Tem certeza? Todos os relatórios serão apagados permanentemente.")) {
+                relatorios = [];
+                for(let key in suggestionsDB) suggestionsDB[key].clear();
+                salvarRelatoriosStorage();
+                salvarSuggestionsStorage();
+                atualizarTodasDatalists();
+                renderizarRelatorios();
+                mostrarToast("Histórico limpo.");
+            }
+        }
 
-        <!-- Store Profile Page (Public View) -->
-        <div id="store-profile-page" class="page">
-            <div id="store-profile-header" class="card"
-                style="text-align:center; padding: 40px 20px; background: linear-gradient(to bottom, #fff, #f8f9fa);">
-                <!-- Injected via JS -->
-            </div>
-            <h3 class="page-title" style="font-size:1.4rem; margin-top:0;">Produtos da Loja</h3>
-            <div id="store-profile-products" class="products-grid"></div>
-        </div>
+        function mostrarToast(msg) {
+            let toast = document.createElement("div");
+            toast.innerText = msg;
+            toast.className = "fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2 rounded-full text-sm shadow-lg z-50 transition-all";
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 2500);
+        }
 
-        <!-- My Store Page -->
-        <div id="my-store-page" class="page">
-            <!-- Empty State -->
-            <div id="store-not-created" class="card hidden">
-                <div class="empty-state">
-                    <i class="fas fa-store-slash"></i>
-                    <h3>Sua loja ainda não existe</h3>
-                    <p style="margin-bottom:20px;">Comece a vender hoje mesmo!</p>
-                    <button id="create-store-btn" class="btn" style="max-width:200px; margin:0 auto;">
-                        <i class="fas fa-plus"></i> Criar Loja
-                    </button>
-                </div>
-            </div>
+        function escapeHtml(str) { if(!str) return ""; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
 
-            <!-- Dashboard State -->
-            <div id="store-created" class="hidden">
-                <!-- Store Header Card -->
-                <div class="card" style="display:flex; flex-direction:column; gap:20px; padding:24px;">
-                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-                        <img id="store-logo-img" src="" alt="Logo" class="store-avatar"
-                            style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:4px solid white; box-shadow:var(--shadow-md);">
-                        <div style="flex:1;">
-                            <h2 id="store-name" style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
-                                Nome da Loja
-                                <span
-                                    style="font-size:0.8rem; background:#e8f5e9; color:var(--primary-color); padding:4px 8px; border-radius:12px;">Ativo</span>
-                            </h2>
-                            <p id="store-description" style="color:var(--text-muted); margin-bottom:12px;">Descrição da
-                                loja...</p>
-                            <p style="font-weight:500;"><i class="fab fa-whatsapp" style="color:#25D366"></i> <span
-                                    id="store-phone"></span></p>
-                        </div>
-                        <button class="btn btn-secondary" onclick="openEditStoreModal()"
-                            style="width:auto; height:fit-content; margin:0;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Products Stats & List -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 class="page-title" style="margin:0;">Meus Produtos</h3>
-                    <button id="add-product-from-store" class="btn btn-warning" onclick="showPage('add-product')"
-                        style="width:auto; padding:10px 20px;">
-                        <i class="fas fa-plus"></i> Novo
-                    </button>
-                </div>
-
-                <div id="my-products-list" class="products-grid"></div>
-            </div>
-        </div>
-
-        <!-- Add Product Page -->
-        <div id="add-product-page" class="page">
-            <h2 class="page-title">Novo Produto</h2>
-            <div class="card">
-                <form id="add-product-form">
-                    <div class="form-group">
-                        <label>Nome</label>
-                        <input type="text" id="product-name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Preço (R$)</label>
-                        <input type="number" id="product-price" class="form-control" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Categoria</label>
-                        <select id="product-category" class="form-control" required style="background:white;">
-                            <option value="">Selecione...</option>
-                            <option value="Roupas">Roupas</option>
-                            <option value="Eletrônicos">Eletrônicos</option>
-                            <option value="Casa">Casa</option>
-                            <option value="Beleza">Beleza</option>
-                            <option value="Esportes">Esportes</option>
-                            <option value="Brinquedos">Brinquedos</option>
-                            <option value="Livros">Livros</option>
-                            <option value="Automotivo">Automotivo</option>
-                            <option value="Pet Shop">Pet Shop</option>
-                            <option value="Games">Games</option>
-                            <option value="Comidas">Comidas</option>
-                            <option value="Doces">Doces</option>
-                            <option value="Bebidas">Bebidas</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição</label>
-                        <textarea id="product-description" class="form-control" rows="4"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Fotos</label>
-                        <input type="file" id="product-images" multiple accept="image/*" class="form-control">
-                        <div id="image-preview" style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;"></div>
-                    </div>
-                    <button type="submit" class="btn">Publicar</button>
-                </form>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Store Modal (Create/Edit) -->
-    <div id="store-modal" class="modal">
-        <div class="modal-content">
-            <div class="close-modal">&times;</div>
-            <div style="padding:20px;">
-                <h2>Dados da Loja</h2>
-                <form id="store-form" style="margin-top:20px;">
-                    <div class="form-group">
-                        <label>Nome da Loja</label>
-                        <input type="text" id="store-name-input" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição</label>
-                        <textarea id="store-description-input" class="form-control" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>WhatsApp (com DDD)</label>
-                        <input type="tel" id="store-phone-input" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Logo</label>
-                        <input type="file" id="store-logo" class="form-control">
-                        <div id="store-logo-preview"></div>
-                    </div>
-                    <button type="submit" class="btn">Salvar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Product Details Modal -->
-    <div id="product-modal" class="modal">
-        <div class="modal-content">
-            <div class="close-modal">&times;</div>
-            <div id="product-modal-content"></div>
-        </div>
-    </div>
-
-    <!-- FAB -->
-    <div class="fab" id="fab-add-product" onclick="showPage('add-product')">
-        <i class="fas fa-plus"></i>
-    </div>
-
-    <!-- Logic -->
-    <script src="script.js"></script>
+        // Eventos principais
+        document.getElementById("btnSalvarRelatorio").addEventListener("click", () => {
+            const novo = coletarFormulario();
+            if(novo) adicionarRelatorio(novo);
+        });
+        document.getElementById("btnNovoRelatorio").addEventListener("click", () => {
+            limparFormulario();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        document.getElementById("btnExportarTudo").addEventListener("click", exportarTodosRelatorios);
+        document.getElementById("limparHistoricoBtn").addEventListener("click", limparHistorico);
+        
+        // Inicialização
+        carregarDados();
+    </script>
 </body>
-
 </html>
