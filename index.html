@@ -441,12 +441,27 @@
             `).join('');
         }
 
-        function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(error => {
-                showNotification('Erro ao fazer login: ' + error.message, 'error');
-            });
+// Substitua a função signInWithGoogle por esta:
+async function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    
+    try {
+        // Usando popup em vez de redirect - MAIS ESTÁVEL
+        const result = await firebase.auth().signInWithPopup(provider);
+        console.log('Usuário logado:', result.user);
+        showNotification('Login realizado com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro detalhado:', error);
+        
+        // Fallback: tenta redirect se popup falhar
+        if (error.code === 'auth/popup-blocked') {
+            showNotification('Popup bloqueado! Clique novamente.', 'error');
+            await firebase.auth().signInWithRedirect(provider);
+        } else {
+            showNotification('Erro: ' + error.message, 'error');
         }
+    }
+}
 
         function logout() {
             auth.signOut();
