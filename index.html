@@ -12,23 +12,76 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        .task-card { transition: all 0.3s ease; }
-        .task-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
-        .break-words { word-wrap: break-word; word-break: break-word; }
+        
+        * { 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        .task-card { 
+            transition: all 0.2s ease; 
+        }
+        
+        .task-card:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+        }
+        
+        ::-webkit-scrollbar { 
+            width: 6px; 
+            height: 6px; 
+        }
+        
+        ::-webkit-scrollbar-track { 
+            background: #f1f1f1; 
+            border-radius: 10px; 
+        }
+        
+        ::-webkit-scrollbar-thumb { 
+            background: #c7c7c7; 
+            border-radius: 10px; 
+        }
+        
+        ::-webkit-scrollbar-thumb:hover { 
+            background: #a0a0a0; 
+        }
+        
+        .break-words { 
+            word-wrap: break-word; 
+            word-break: break-word; 
+        }
+        
+        /* Chaveador Customizado (Toggle) */
+        .toggle-checkbox:checked { 
+            right: 0; 
+            border-color: #4f46e5; 
+        }
+        .toggle-checkbox:checked + .toggle-label { 
+            background-color: #4f46e5; 
+        }
         
         /* Estilos das Abas */
-        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background-color: #e0e7ff; }
-        .tab-content { display: none; animation: fadeIn 0.3s; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-btn.active { 
+            color: #4f46e5; 
+            border-bottom-color: #4f46e5; 
+            background-color: #e0e7ff; 
+        }
+        
+        .tab-content { 
+            display: none; 
+            animation: fadeIn 0.3s; 
+        }
+        
+        .tab-content.active { 
+            display: block; 
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(5px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
+<body class="bg-gray-50 min-h-screen text-gray-800 pb-20 sm:pb-0">
     <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div class="text-center">
             <i class="fas fa-tasks text-6xl text-indigo-600 animate-bounce"></i>
@@ -53,6 +106,7 @@
     </div>
 
     <div id="appContainer" class="hidden flex flex-col min-h-screen">
+        
         <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
             <div class="container mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -61,6 +115,7 @@
                     </div>
                     <h1 class="text-xl font-bold text-gray-800 hidden sm:block">TaskFlow</h1>
                 </div>
+                
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
                         <img id="userAvatar" src="" class="w-6 h-6 rounded-full bg-gray-300 hidden">
@@ -88,25 +143,17 @@
             </div>
         </div>
 
-        <div class="container mx-auto px-4 py-6 flex-1 max-w-4xl">
+        <div class="container mx-auto px-4 py-6 flex-1 max-w-4xl relative">
             
             <div id="tab-tasks" class="tab-content active">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center w-full sm:w-auto justify-between sm:justify-start gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
-                        <button onclick="changeDate(-1)" class="p-2 text-gray-600 hover:bg-white hover:shadow-sm rounded transition">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <input type="date" id="datePicker" class="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 outline-none text-center cursor-pointer">
-                        <button onclick="changeDate(1)" class="p-2 text-gray-600 hover:bg-white hover:shadow-sm rounded transition">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                    <button onclick="showAddTaskModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg transition shadow-sm flex items-center justify-center gap-2 font-medium">
-                        <i class="fas fa-plus"></i> Nova Tarefa
-                    </button>
+                
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-2 mb-4 flex items-center justify-center gap-2 max-w-xs mx-auto">
+                    <button onclick="changeDate(-1)" class="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition"><i class="fas fa-chevron-left"></i></button>
+                    <input type="date" id="datePicker" class="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 outline-none text-center cursor-pointer w-32">
+                    <button onclick="changeDate(1)" class="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition"><i class="fas fa-chevron-right"></i></button>
                 </div>
 
-                <div id="tasksList" class="space-y-3 pb-20"></div>
+                <div id="tasksList" class="space-y-2.5 pb-24"></div>
             </div>
 
             <div id="tab-files" class="tab-content">
@@ -125,24 +172,44 @@
                 </div>
             </div>
 
-            <div id="tab-team" class="tab-content">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="mb-6 border-b border-gray-100 pb-4">
-                        <h2 class="text-xl font-bold text-gray-800">Usuários Online</h2>
-                        <p class="text-sm text-gray-500">Quem está com o TaskFlow aberto agora.</p>
+            <div id="tab-team" class="tab-content pb-20">
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="mb-4 border-b border-gray-100 pb-3">
+                            <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-circle text-green-500 text-xs"></i> Online Agora
+                            </h2>
+                            <p class="text-sm text-gray-500">Quem está com o TaskFlow aberto neste momento.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2" id="activeUsersList"></div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="activeUsersList"></div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="mb-4 border-b border-gray-100 pb-3">
+                            <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-address-book text-indigo-500"></i> Permissões de Acesso
+                            </h2>
+                            <p class="text-sm text-gray-500">Dê acesso total aos usuários cadastrados para não precisar convidá-los por tarefa.</p>
+                        </div>
+                        <div class="space-y-3" id="allUsersList"></div>
+                    </div>
                 </div>
             </div>
 
         </div>
+
+        <button id="fabAddTask" onclick="showAddTaskModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-[0_8px_15px_rgba(79,70,229,0.4)] flex items-center justify-center text-2xl transition-transform transform hover:scale-105 z-40 active:scale-95">
+            <i class="fas fa-plus"></i>
+        </button>
     </div>
 
     <div id="taskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-xl font-bold text-gray-800">Criar Nova Tarefa</h3>
-                <button onclick="closeModal('taskModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-lg"></i></button>
+                <button onclick="closeModal('taskModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
             
             <div class="space-y-4">
@@ -166,8 +233,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Atribuir para (Email)</label>
-                        <input type="email" id="inviteEmail" placeholder="opcional@email.com" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:border-indigo-500 outline-none transition text-sm">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Convite (Opcional)</label>
+                        <input type="email" id="inviteEmail" placeholder="email@ex.com" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:border-indigo-500 outline-none transition text-sm">
                     </div>
                 </div>
             </div>
@@ -193,6 +260,7 @@
             measurementId: "G-7HHR78MHDP"
         };
 
+        // Inicializando o Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -200,7 +268,7 @@
 
         let currentUser = null;
         
-        // Data Local
+        // Função para Data Local Correta
         function getLocalISODate(d) {
             const date = new Date(d);
             const offset = date.getTimezoneOffset();
@@ -210,10 +278,12 @@
 
         let currentDate = getLocalISODate(new Date());
 
-        // Lógica de Abas
+        // Lógica para Trocar as Abas
         function switchTab(tabId) {
             // Esconde todas as abas
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            
+            // Reseta todos os botões de abas
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('active', 'text-indigo-600', 'border-indigo-600', 'bg-indigo-50');
                 el.classList.add('text-gray-500', 'border-transparent');
@@ -221,25 +291,38 @@
 
             // Mostra a aba selecionada
             document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            // Destaca o botão da aba selecionada
             const btn = document.getElementById(`btn-tab-${tabId}`);
             btn.classList.add('active', 'text-indigo-600', 'border-indigo-600');
             btn.classList.remove('text-gray-500', 'border-transparent');
             
-            // Mobile: adiciona fundo levinho
-            if(window.innerWidth < 640) btn.classList.add('bg-indigo-50');
+            if(window.innerWidth < 640) {
+                btn.classList.add('bg-indigo-50');
+            }
+
+            // Mostra ou esconde o Botão Flutuante (FAB)
+            const fab = document.getElementById('fabAddTask');
+            if (tabId === 'tasks') {
+                fab.classList.remove('hidden');
+            } else {
+                fab.classList.add('hidden');
+            }
         }
 
-        // Estado da Autenticação
+        // Observador de Estado de Autenticação
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
+                
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('appContainer').classList.remove('hidden');
                 document.getElementById('appContainer').classList.add('flex');
                 
                 document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
-                if(user.photoURL) {
+                
+                if (user.photoURL) {
                     document.getElementById('userAvatar').src = user.photoURL;
                     document.getElementById('userAvatar').classList.remove('hidden');
                     document.getElementById('userIconFallback').classList.add('hidden');
@@ -250,6 +333,7 @@
                 loadFiles();
                 setupRealtimeListeners();
                 setupActiveStatus();
+                
             } else {
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.remove('hidden');
@@ -258,6 +342,7 @@
             }
         });
 
+        // Inicializa dados do usuário no banco
         async function initializeUser() {
             try {
                 await db.collection('users').doc(currentUser.uid).set({
@@ -267,38 +352,61 @@
                     lastActive: firebase.firestore.FieldValue.serverTimestamp(),
                     online: true
                 }, { merge: true });
-            } catch (e) { console.error("Erro ao iniciar user:", e); }
+            } catch (error) { 
+                console.error("Erro ao iniciar user:", error); 
+            }
         }
 
+        // Atualiza status online
         function setupActiveStatus() {
             const userRef = db.collection('users').doc(currentUser.uid);
+            
             const updateStatus = () => {
-                userRef.update({ lastActive: firebase.firestore.FieldValue.serverTimestamp(), online: true }).catch(()=>{});
+                userRef.update({ 
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp(), 
+                    online: true 
+                }).catch(() => {});
             };
+            
             updateStatus();
             setInterval(updateStatus, 30000);
-            window.addEventListener('beforeunload', () => userRef.update({ online: false }));
-        }
-
-        function setupRealtimeListeners() {
-            // Ouvinte de Usuários
-            db.collection('users').where('online', '==', true)
-                .onSnapshot((snapshot) => {
-                    const activeUsers = [];
-                    snapshot.forEach(doc => {
-                        if (doc.id !== currentUser.uid) activeUsers.push(doc.data());
-                    });
-                    displayActiveUsers(activeUsers);
-                });
             
-            // Ouvinte de Tarefas (SEM orderBy para evitar erro de índice no Firebase)
-            db.collection('tasks').where('date', '==', currentDate)
-                .onSnapshot(() => loadTasks());
+            window.addEventListener('beforeunload', () => {
+                userRef.update({ online: false });
+            });
         }
 
+        // Listeners em tempo real (Tarefas e Usuários)
+        function setupRealtimeListeners() {
+            // Escuta Usuários Online (para a aba Equipe)
+            db.collection('users').where('online', '==', true).onSnapshot((snapshot) => {
+                const activeUsers = [];
+                snapshot.forEach(doc => {
+                    if (doc.id !== currentUser.uid) {
+                        activeUsers.push(doc.data());
+                    }
+                });
+                displayActiveUsers(activeUsers);
+            });
+
+            // Escuta TODOS os usuários (para Gerenciamento de Permissões)
+            db.collection('users').onSnapshot((snapshot) => {
+                const allUsers = [];
+                snapshot.forEach(doc => {
+                    allUsers.push({ id: doc.id, ...doc.data() });
+                });
+                displayAllUsers(allUsers);
+            });
+            
+            // Escuta as Tarefas
+            db.collection('tasks').where('date', '==', currentDate).onSnapshot(() => {
+                loadTasks();
+            });
+        }
+
+        // Carrega Tarefas
         async function loadTasks() {
             try {
-                // Removemos o .orderBy() para o Firebase não travar.
                 const tasksSnapshot = await db.collection('tasks')
                     .where('date', '==', currentDate)
                     .get();
@@ -308,18 +416,20 @@
                     tasks.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Fazemos a ordenação no próprio JavaScript (Alta > Media > Baixa)
+                // Ordenação feita pelo JavaScript
                 tasks.sort((a, b) => b.priorityValue - a.priorityValue);
                 
                 displayTasks(tasks);
             } catch (error) {
                 console.error("Erro ao carregar tarefas:", error);
-                showNotification('Erro ao puxar tarefas. Verifique as Regras de Segurança no Firebase.', 'error');
+                showNotification('Erro ao puxar tarefas. Verifique o console.', 'error');
             }
         }
 
+        // Exibe as Tarefas (Design Fino e Compacto)
         function displayTasks(tasks) {
             const container = document.getElementById('tasksList');
+            
             if (tasks.length === 0) {
                 container.innerHTML = `
                     <div class="text-center bg-white border border-dashed border-gray-300 rounded-xl py-12 px-4">
@@ -327,54 +437,63 @@
                             <i class="fas fa-mug-hot text-2xl text-gray-400"></i>
                         </div>
                         <h3 class="text-lg font-medium text-gray-800">Nenhuma tarefa hoje</h3>
-                        <p class="text-sm text-gray-500 mt-1">Sua agenda está livre! Que tal adicionar algo?</p>
-                        <button onclick="showAddTaskModal()" class="mt-4 text-indigo-600 font-medium hover:underline text-sm">Criar primeira tarefa</button>
+                        <p class="text-sm text-gray-500 mt-1">Sua agenda está livre!</p>
                     </div>`;
                 return;
             }
             
             container.innerHTML = tasks.map(task => `
-                <div class="task-card bg-white rounded-xl p-4 border border-gray-200 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col sm:flex-row justify-between gap-4">
-                    <div class="flex-1 break-words overflow-hidden">
-                        <div class="flex flex-wrap items-center gap-2 mb-2">
-                            <h4 class="font-bold text-gray-800 text-lg">${escapeHtml(task.title)}</h4>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${getPriorityBadge(task.priority)}">${task.priority}</span>
-                            ${task.activeUser ? `<span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold animate-pulse"><i class="fas fa-bolt text-yellow-500"></i> ${escapeHtml(task.activeUser)} fazendo</span>` : ''}
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3 whitespace-pre-wrap">${escapeHtml(task.description || 'Sem descrição.')}</p>
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 font-medium">
-                            <span class="bg-gray-100 px-2 py-1 rounded"><i class="fas fa-user mr-1"></i> ${escapeHtml(task.createdBy)}</span>
-                            ${task.assignedTo ? `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded"><i class="fas fa-at mr-1"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
+                <div class="task-card bg-white rounded-lg p-3 border border-gray-200 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col justify-between gap-2">
+                    
+                    <div class="flex items-start justify-between gap-2 w-full">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="font-bold text-gray-800 text-sm sm:text-base leading-tight truncate">${escapeHtml(task.title)}</h4>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${getPriorityBadge(task.priority)}">${task.priority}</span>
+                            </div>
+                            ${task.description ? `<p class="text-xs text-gray-500 mt-1 truncate">${escapeHtml(task.description)}</p>` : ''}
                         </div>
                     </div>
-                    <div class="flex sm:flex-col justify-end gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-3 sm:pt-0 sm:pl-4 min-w-[120px]">
-                        ${!task.completed ? `
-                            <button onclick="startTask('${task.id}')" class="flex-1 sm:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-lg text-sm transition font-semibold flex items-center justify-center gap-2">
-                                <i class="fas fa-play"></i> Iniciar
-                            </button>
-                            <button onclick="completeTask('${task.id}')" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm transition font-semibold flex items-center justify-center gap-2 shadow-sm">
-                                <i class="fas fa-check"></i> Fechar
-                            </button>
-                        ` : `
-                            <div class="bg-green-50 text-green-700 px-3 py-2 rounded-lg text-sm font-bold flex flex-col items-center justify-center gap-1 w-full h-full text-center">
-                                <i class="fas fa-check-circle text-xl"></i>
-                                <span class="text-[10px] text-green-600">por ${escapeHtml(task.completedBy)}</span>
-                            </div>
-                        `}
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-t border-gray-100 pt-2 mt-1 gap-2">
+                        <div class="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
+                            <span><i class="fas fa-user mr-1"></i>${escapeHtml(task.createdBy.split(' ')[0])}</span>
+                            ${task.assignedTo ? `<span class="text-blue-500"><i class="fas fa-at"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
+                            ${task.activeUser ? `<span class="text-indigo-600 bg-indigo-50 px-1.5 rounded animate-pulse"><i class="fas fa-bolt text-yellow-500"></i> ${escapeHtml(task.activeUser.split(' ')[0])} fazendo</span>` : ''}
+                        </div>
+                        
+                        <div class="flex items-center gap-2 self-end sm:self-auto">
+                            ${!task.completed ? `
+                                <button onclick="startTask('${task.id}')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition">
+                                    <i class="fas fa-play text-[10px]"></i> Iniciar
+                                </button>
+                                <button onclick="completeTask('${task.id}')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 shadow-sm transition">
+                                    <i class="fas fa-check text-[10px]"></i> Fechar
+                                </button>
+                            ` : `
+                                <span class="text-green-600 text-xs font-bold flex items-center gap-1">
+                                    <i class="fas fa-check-double"></i> Concluído
+                                </span>
+                            `}
+                        </div>
                     </div>
                 </div>
             `).join('');
         }
 
+        // Função Iniciar Tarefa
         async function startTask(taskId) {
             try {
                 await db.collection('tasks').doc(taskId).update({
                     activeUser: currentUser.displayName || currentUser.email.split('@')[0],
                     activeStart: firebase.firestore.FieldValue.serverTimestamp()
                 });
-            } catch (error) { showNotification('Erro ao iniciar', 'error'); }
+            } catch (error) { 
+                showNotification('Erro ao iniciar', 'error'); 
+            }
         }
 
+        // Função Concluir Tarefa
         async function completeTask(taskId) {
             try {
                 await db.collection('tasks').doc(taskId).update({
@@ -384,9 +503,12 @@
                     activeUser: null
                 });
                 showNotification('Tarefa Concluída! 🎉', 'success');
-            } catch (error) { showNotification('Erro ao concluir', 'error'); }
+            } catch (error) { 
+                showNotification('Erro ao concluir', 'error'); 
+            }
         }
 
+        // Criar Nova Tarefa
         async function createTask() {
             const title = document.getElementById('taskTitle').value.trim();
             const desc = document.getElementById('taskDesc').value.trim();
@@ -410,7 +532,7 @@
                     title: title,
                     description: desc,
                     priority: priority,
-                    priorityValue: priorityValue, // Salvo para ordenar no JS depois
+                    priorityValue: priorityValue,
                     date: currentDate,
                     createdBy: currentUser.displayName || currentUser.email.split('@')[0],
                     createdByUid: currentUser.uid,
@@ -421,6 +543,8 @@
                 });
                 
                 closeModal('taskModal');
+                
+                // Limpa os campos
                 document.getElementById('taskTitle').value = '';
                 document.getElementById('taskDesc').value = '';
                 document.getElementById('inviteEmail').value = '';
@@ -430,7 +554,8 @@
                 btn.disabled = false;
                 
                 showNotification('Tarefa criada com sucesso!', 'success');
-                loadTasks(); // Força atualização na tela
+                loadTasks(); 
+                
             } catch (error) {
                 console.error(error);
                 showNotification('Erro ao salvar. Verifique o banco de dados.', 'error');
@@ -438,9 +563,12 @@
             }
         }
 
+        // Upload de Arquivos
         async function uploadFiles(input) {
             const files = Array.from(input.files);
-            if(files.length === 0) return;
+            
+            if (files.length === 0) return;
+            
             showNotification('Fazendo upload...', 'success');
             
             for (const file of files) {
@@ -458,24 +586,38 @@
                         uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         date: currentDate
                     });
-                } catch (error) { showNotification(`Erro no arquivo ${file.name}`, 'error'); }
+                } catch (error) { 
+                    showNotification(`Erro no arquivo ${file.name}`, 'error'); 
+                }
             }
             showNotification(`Upload concluído!`, 'success');
             loadFiles();
             input.value = ''; 
         }
 
+        // Carrega Arquivos
         async function loadFiles() {
             try {
-                const filesSnapshot = await db.collection('files').orderBy('uploadedAt', 'desc').limit(20).get();
+                const filesSnapshot = await db.collection('files')
+                    .orderBy('uploadedAt', 'desc')
+                    .limit(20)
+                    .get();
+                    
                 const files = [];
-                filesSnapshot.forEach(doc => { files.push({ id: doc.id, ...doc.data() }); });
+                filesSnapshot.forEach(doc => { 
+                    files.push({ id: doc.id, ...doc.data() }); 
+                });
+                
                 displayFiles(files);
-            } catch(error) { console.error(error); }
+            } catch(error) { 
+                console.error(error); 
+            }
         }
 
+        // Exibe Arquivos
         function displayFiles(files) {
             const container = document.getElementById('filesList');
+            
             if (files.length === 0) {
                 container.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Nenhum arquivo no cofre ainda.</div>';
                 return;
@@ -499,29 +641,61 @@
             `).join('');
         }
 
+        // Exibe Usuários Online
         function displayActiveUsers(users) {
             const container = document.getElementById('activeUsersList');
+            
             if (users.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Ninguém da equipe está online.</div>';
+                container.innerHTML = '<div class="w-full text-center text-gray-500 py-4 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Só você está online.</div>';
                 return;
             }
             
             container.innerHTML = users.map(user => `
-                <div class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                    <div class="relative">
-                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm">
-                            ${(user.name || user.email).charAt(0).toUpperCase()}
+                <span class="bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <i class="fas fa-circle text-[8px] text-green-500 animate-pulse"></i>
+                    ${escapeHtml(user.name || user.email.split('@')[0])}
+                </span>
+            `).join('');
+        }
+
+        // Exibe a Lista de TODOS os Usuários com Toggle
+        function displayAllUsers(users) {
+            const container = document.getElementById('allUsersList');
+            
+            container.innerHTML = users.map(user => `
+                <div class="flex items-center justify-between bg-gray-50 border border-gray-100 hover:border-indigo-100 rounded-lg p-3 transition">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <img src="${user.photoURL || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full bg-gray-200 shrink-0" onerror="this.style.display='none'">
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-sm font-bold text-gray-800 truncate">${escapeHtml(user.name || user.email)}</span>
+                            <span class="text-[10px] text-gray-500 truncate">${escapeHtml(user.email)}</span>
                         </div>
-                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                     </div>
-                    <div class="flex flex-col">
-                        <span class="text-sm font-bold text-gray-800 truncate">${escapeHtml(user.name || user.email.split('@')[0])}</span>
-                        <span class="text-[10px] text-green-600 font-medium">Online agora</span>
+                    <div class="flex items-center gap-2 shrink-0 ml-2">
+                        <span class="text-[10px] text-gray-600 font-bold uppercase tracking-wider hidden sm:block">Acesso</span>
+                        <div class="relative inline-block w-10 mr-1 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" onchange="toggleUserAccess('${user.id}', this.checked)" id="toggle-${user.id}" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" ${user.globalAccess ? 'checked' : ''}/>
+                            <label for="toggle-${user.id}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer transition-colors duration-200"></label>
+                        </div>
                     </div>
                 </div>
             `).join('');
         }
 
+        // Alterna o acesso global do usuário no banco de dados
+        async function toggleUserAccess(userId, isChecked) {
+            try {
+                await db.collection('users').doc(userId).update({ 
+                    globalAccess: isChecked 
+                });
+                showNotification(isChecked ? 'Acesso total concedido!' : 'Acesso total removido.', 'success');
+            } catch(error) {
+                showNotification('Erro ao alterar acesso.', 'error');
+                console.error(error);
+            }
+        }
+
+        // Login
         async function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
             try {
@@ -529,12 +703,18 @@
             } catch (error) {
                 if (error.code === 'auth/popup-blocked') {
                     await firebase.auth().signInWithRedirect(provider);
-                } else { showNotification('Erro no login.', 'error'); }
+                } else { 
+                    showNotification('Erro no login.', 'error'); 
+                }
             }
         }
 
-        function logout() { auth.signOut(); }
+        // Logout
+        function logout() { 
+            auth.signOut(); 
+        }
 
+        // Mudar Data
         function changeDate(delta) {
             const [year, month, day] = currentDate.split('-');
             const date = new Date(year, month - 1, day);
@@ -544,10 +724,10 @@
             loadTasks();
         }
 
+        // Abrir/Fechar Modal
         function showAddTaskModal() {
-            const modal = document.getElementById('taskModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            document.getElementById('taskModal').classList.remove('hidden');
+            document.getElementById('taskModal').classList.add('flex');
             setTimeout(() => document.getElementById('taskTitle').focus(), 100);
         }
 
@@ -556,8 +736,14 @@
             document.getElementById(modalId).classList.remove('flex');
         }
 
-        function getPriorityColor(priority) { return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500'; }
-        function getPriorityBadge(priority) { return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700'; }
+        // Utilitários
+        function getPriorityColor(priority) { 
+            return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500'; 
+        }
+        
+        function getPriorityBadge(priority) { 
+            return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700'; 
+        }
         
         function getFileIcon(type) {
             if (!type) return 'fa-file text-gray-400';
@@ -579,10 +765,18 @@
             const notification = document.createElement('div');
             notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-6 py-3 rounded-xl shadow-lg font-medium flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white text-sm w-[90%] max-w-sm`;
             notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> <span>${message}</span>`;
+            
             document.body.appendChild(notification);
             
-            notification.animate([ { opacity: 0, transform: 'translateY(-20px) translateX(-50%)' }, { opacity: 1, transform: 'translateY(0) translateX(-50%)' } ], { duration: 300, fill: 'forwards' });
-            setTimeout(() => { notification.style.opacity = '0'; setTimeout(() => notification.remove(), 300); }, 3000);
+            notification.animate([ 
+                { opacity: 0, transform: 'translateY(-20px) translateX(-50%)' }, 
+                { opacity: 1, transform: 'translateY(0) translateX(-50%)' } 
+            ], { duration: 300, fill: 'forwards' });
+            
+            setTimeout(() => { 
+                notification.style.opacity = '0'; 
+                setTimeout(() => notification.remove(), 300); 
+            }, 3000);
         }
 
         function escapeHtml(text) {
@@ -592,13 +786,20 @@
             return div.innerHTML;
         }
 
+        // Eventos de Inicialização
         document.getElementById('datePicker').value = currentDate;
+        
         document.getElementById('datePicker').addEventListener('change', (e) => {
-            if(e.target.value) { currentDate = e.target.value; loadTasks(); }
+            if(e.target.value) { 
+                currentDate = e.target.value; 
+                loadTasks(); 
+            }
         });
 
         document.getElementById('taskModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('taskModal')) closeModal('taskModal');
+            if (e.target === document.getElementById('taskModal')) {
+                closeModal('taskModal');
+            }
         });
     </script>
 </body>
