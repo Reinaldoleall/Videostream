@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskFlow - Agenda Colaborativa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -20,164 +20,148 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
         }
-        .status-active {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb {
-            background: #888;
+            background: #c7c7c7;
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: #a0a0a0;
         }
+        /* Garantir que textos longos não quebrem o layout */
+        .break-words { word-wrap: break-word; word-break: break-word; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    <!-- Loading Screen -->
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen text-gray-800">
     <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div class="text-center">
             <i class="fas fa-tasks text-6xl text-indigo-600 animate-bounce"></i>
-            <p class="mt-4 text-gray-600">Carregando TaskFlow...</p>
+            <p class="mt-4 text-gray-600 font-medium">Carregando TaskFlow...</p>
         </div>
     </div>
 
-    <!-- Login Container -->
     <div id="loginContainer" class="min-h-screen flex items-center justify-center px-4 hidden">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
             <div class="text-center mb-8">
                 <i class="fas fa-tasks text-5xl text-indigo-600"></i>
                 <h1 class="text-3xl font-bold mt-4 text-gray-800">TaskFlow</h1>
                 <p class="text-gray-500 mt-2">Agenda Colaborativa em Tempo Real</p>
             </div>
-            <button onclick="signInWithGoogle()" class="w-full bg-white border-2 border-gray-200 hover:border-indigo-500 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3">
+            <button onclick="signInWithGoogle()" class="w-full bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-95">
                 <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
                 Entrar com Google
             </button>
         </div>
     </div>
 
-    <!-- Main App Container -->
     <div id="appContainer" class="hidden">
-        <!-- Header -->
-        <div class="bg-white shadow-lg sticky top-0 z-20">
-            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="bg-white shadow-md sticky top-0 z-20">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-3">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-tasks text-2xl text-indigo-600"></i>
-                    <h1 class="text-2xl font-bold text-gray-800">TaskFlow</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-800">TaskFlow</h1>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+                <div class="flex items-center gap-2 sm:gap-4 ml-auto">
+                    <div class="hidden sm:flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
                         <i class="fas fa-user-circle text-gray-600"></i>
-                        <span id="userName" class="text-sm font-medium text-gray-700"></span>
+                        <span id="userName" class="text-sm font-medium text-gray-700 truncate max-w-[120px]"></span>
                     </div>
-                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
-                        <i class="fas fa-sign-out-alt"></i> Sair
+                    <button onclick="logout()" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 px-3 py-2 sm:px-4 rounded-lg transition text-sm font-medium flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Sair</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="container mx-auto px-4 py-8">
-            <!-- Date Navigation -->
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex items-center gap-4">
-                        <button onclick="changeDate(-1)" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg transition">
-                            <i class="fas fa-chevron-left"></i> Anterior
+        <div class="container mx-auto px-3 sm:px-4 py-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-6">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center w-full sm:w-auto justify-between sm:justify-start gap-2 sm:gap-4">
+                        <button onclick="changeDate(-1)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex items-center gap-1 sm:gap-2">
+                            <i class="fas fa-chevron-left"></i> <span class="hidden sm:inline">Anterior</span>
                         </button>
-                        <input type="date" id="datePicker" class="border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none">
-                        <button onclick="changeDate(1)" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg transition">
-                            Próximo <i class="fas fa-chevron-right"></i>
+                        <input type="date" id="datePicker" class="border-2 border-gray-200 rounded-lg px-2 sm:px-4 py-2 focus:border-indigo-500 outline-none text-sm sm:text-base w-full sm:w-auto text-center">
+                        <button onclick="changeDate(1)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex items-center gap-1 sm:gap-2">
+                            <span class="hidden sm:inline">Próximo</span> <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
-                    <button onclick="showAddTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition shadow-md">
+                    <button onclick="showAddTaskModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition shadow-md flex items-center justify-center gap-2 font-medium">
                         <i class="fas fa-plus"></i> Nova Tarefa
                     </button>
                 </div>
             </div>
 
-            <div class="grid lg:grid-cols-3 gap-6">
-                <!-- Tasks Column -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2">
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <h2 class="text-lg sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
                             <i class="fas fa-list-check text-indigo-600"></i> Tarefas do Dia
                         </h2>
-                        <div id="tasksList" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
+                        <div id="tasksList" class="space-y-3 max-h-[60vh] lg:max-h-[600px] overflow-y-auto pr-2"></div>
                     </div>
                 </div>
 
-                <!-- Files & Active Users Column -->
                 <div class="space-y-6">
-                    <!-- Active Users Card -->
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-lg font-bold mb-4 text-gray-800">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <h3 class="text-md sm:text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
                             <i class="fas fa-users text-green-600"></i> Trabalhando Agora
                         </h3>
-                        <div id="activeUsersList" class="space-y-2 max-h-[200px] overflow-y-auto"></div>
+                        <div id="activeUsersList" class="space-y-2 max-h-[200px] overflow-y-auto pr-2"></div>
                     </div>
 
-                    <!-- Shared Files Card -->
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-gray-800">
-                                <i class="fas fa-paperclip text-blue-600"></i> Arquivos Compartilhados
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <div class="flex justify-between items-center mb-4 gap-2">
+                            <h3 class="text-md sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-paperclip text-blue-600"></i> Arquivos
                             </h3>
-                            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition">
-                                <i class="fas fa-upload"></i> Upload
+                            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg text-sm transition font-medium whitespace-nowrap">
+                                <i class="fas fa-upload mr-1"></i> Upload
                             </button>
                             <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
                         </div>
-                        <div id="filesList" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
+                        <div id="filesList" class="space-y-2 max-h-[300px] overflow-y-auto pr-2"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Add Task Modal -->
-    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 class="text-xl font-bold mb-4">Nova Tarefa</h3>
-            <input type="text" id="taskTitle" placeholder="Título da tarefa" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-3 focus:border-indigo-500 outline-none">
-            <textarea id="taskDesc" placeholder="Descrição" rows="3" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-3 focus:border-indigo-500 outline-none"></textarea>
-            <select id="taskPriority" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-3 focus:border-indigo-500 outline-none">
+    <div id="taskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Nova Tarefa</h3>
+            <input type="text" id="taskTitle" placeholder="Título da tarefa" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+            <textarea id="taskDesc" placeholder="Descrição (Opcional)" rows="3" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition resize-none"></textarea>
+            <select id="taskPriority" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition bg-white">
                 <option value="alta">🔴 Alta Prioridade</option>
-                <option value="media">🟡 Média Prioridade</option>
+                <option value="media" selected>🟡 Média Prioridade</option>
                 <option value="baixa">🟢 Baixa Prioridade</option>
             </select>
-            <input type="email" id="inviteEmail" placeholder="Convidar por email (opcional)" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 mb-4 focus:border-indigo-500 outline-none">
+            <input type="email" id="inviteEmail" placeholder="Convidar por email (opcional)" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
             <div class="flex gap-3">
-                <button onclick="createTask()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg transition">Criar</button>
-                <button onclick="closeModal('taskModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg transition">Cancelar</button>
+                <button onclick="createTask()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg transition font-medium">Criar Tarefa</button>
+                <button onclick="closeModal('taskModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-lg transition font-medium">Cancelar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
-            const firebaseConfig = {
-                apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
-                authDomain: "marketplaceconnect-af26d.firebaseapp.com",
-                databaseURL: "https://marketplaceconnect-af26d-default-rtdb.firebaseio.com",
-                projectId: "marketplaceconnect-af26d",
-                storageBucket: "marketplaceconnect-af26d.firebasestorage.app",
-                messagingSenderId: "768552546759",
-                appId: "1:768552546759:web:4367fc4a161ecf90c469e2",
-                measurementId: "G-7HHR78MHDP"
-            };
+        // Configuração do Firebase fornecida
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
+            authDomain: "marketplaceconnect-af26d.firebaseapp.com",
+            databaseURL: "https://marketplaceconnect-af26d-default-rtdb.firebaseio.com",
+            projectId: "marketplaceconnect-af26d",
+            storageBucket: "marketplaceconnect-af26d.firebasestorage.app",
+            messagingSenderId: "768552546759",
+            appId: "1:768552546759:web:4367fc4a161ecf90c469e2",
+            measurementId: "G-7HHR78MHDP"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -186,16 +170,25 @@
         const storage = firebase.storage();
 
         let currentUser = null;
-        let currentDate = new Date().toISOString().split('T')[0];
+        
+        // Função para pegar a data local formatada sem sofrer com timezone UTC
+        function getLocalISODate(d) {
+            const date = new Date(d);
+            const offset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+            return localDate.toISOString().split('T')[0];
+        }
 
-        // Auth State Observer
+        let currentDate = getLocalISODate(new Date());
+
+        // Observer do Estado de Autenticação
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('appContainer').classList.remove('hidden');
-                document.getElementById('userName').textContent = user.displayName || user.email;
+                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
                 
                 await initializeUser();
                 loadTasks();
@@ -212,8 +205,8 @@
         async function initializeUser() {
             await db.collection('users').doc(currentUser.uid).set({
                 email: currentUser.email,
-                name: currentUser.displayName,
-                photoURL: currentUser.photoURL,
+                name: currentUser.displayName || currentUser.email.split('@')[0],
+                photoURL: currentUser.photoURL || '',
                 lastActive: firebase.firestore.FieldValue.serverTimestamp(),
                 online: true
             }, { merge: true });
@@ -226,7 +219,7 @@
                 userRef.update({
                     lastActive: firebase.firestore.FieldValue.serverTimestamp(),
                     online: true
-                });
+                }).catch(()=>console.log("Erro ao atualizar status."));
             };
             
             updateStatus();
@@ -238,7 +231,6 @@
         }
 
         function setupRealtimeListeners() {
-            // Listen to active users
             db.collection('users').where('online', '==', true)
                 .onSnapshot((snapshot) => {
                     const activeUsers = [];
@@ -248,178 +240,206 @@
                         }
                     });
                     displayActiveUsers(activeUsers);
-                });
+                }, (error) => console.error(error));
             
-            // Listen to tasks for current date
             db.collection('tasks')
                 .where('date', '==', currentDate)
-                .orderBy('priority', 'desc')
-                .onSnapshot(() => loadTasks());
+                .orderBy('priorityValue', 'desc')
+                .onSnapshot(() => loadTasks(), (error) => console.error(error));
         }
 
         async function loadTasks() {
-            const tasksSnapshot = await db.collection('tasks')
-                .where('date', '==', currentDate)
-                .orderBy('priorityValue', 'desc')
-                .get();
-            
-            const tasks = [];
-            tasksSnapshot.forEach(doc => {
-                tasks.push({ id: doc.id, ...doc.data() });
-            });
-            
-            displayTasks(tasks);
+            try {
+                const tasksSnapshot = await db.collection('tasks')
+                    .where('date', '==', currentDate)
+                    .orderBy('priorityValue', 'desc')
+                    .get();
+                
+                const tasks = [];
+                tasksSnapshot.forEach(doc => {
+                    tasks.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayTasks(tasks);
+            } catch (error) {
+                console.error("Erro ao carregar tarefas:", error);
+            }
         }
 
         function displayTasks(tasks) {
             const container = document.getElementById('tasksList');
             if (tasks.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-8">Nenhuma tarefa para este dia</div>';
+                container.innerHTML = '<div class="text-center text-gray-500 py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">Nenhuma tarefa para este dia. Aproveite! 🎉</div>';
                 return;
             }
             
             container.innerHTML = tasks.map(task => `
-                <div class="task-card bg-gray-50 rounded-lg p-4 border-l-4 ${getPriorityColor(task.priority)}">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <h4 class="font-semibold text-gray-800">${escapeHtml(task.title)}</h4>
-                                <span class="text-xs px-2 py-1 rounded-full ${getPriorityBadge(task.priority)}">${task.priority}</span>
-                                ${task.activeUser ? `<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full"><i class="fas fa-play"></i> ${task.activeUser} está trabalhando</span>` : ''}
-                            </div>
-                            <p class="text-sm text-gray-600 mb-2">${escapeHtml(task.description || 'Sem descrição')}</p>
-                            <div class="flex items-center gap-4 text-xs text-gray-500">
-                                <span><i class="fas fa-user"></i> Criado por: ${task.createdBy}</span>
-                                ${task.assignedTo ? `<span><i class="fas fa-envelope"></i> Convidado: ${task.assignedTo}</span>` : ''}
-                                ${task.completedBy ? `<span class="text-green-600"><i class="fas fa-check-circle"></i> Concluído por: ${task.completedBy}</span>` : ''}
-                            </div>
+                <div class="task-card bg-white rounded-lg p-4 border border-gray-100 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col sm:flex-row justify-between gap-4">
+                    <div class="flex-1 break-words overflow-hidden">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <h4 class="font-bold text-gray-800 text-lg">${escapeHtml(task.title)}</h4>
+                            <span class="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${getPriorityBadge(task.priority)}">${task.priority}</span>
+                            ${task.activeUser ? `<span class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-medium animate-pulse"><i class="fas fa-cog fa-spin"></i> ${escapeHtml(task.activeUser)} na ativa</span>` : ''}
                         </div>
-                        <div class="flex flex-col gap-2">
-                            ${!task.completed ? `
-                                <button onclick="startTask('${task.id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">
-                                    <i class="fas fa-play"></i> Iniciar
-                                </button>
-                                <button onclick="completeTask('${task.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
-                                    <i class="fas fa-check"></i> Concluir
-                                </button>
-                            ` : `
-                                <span class="text-green-600 text-sm"><i class="fas fa-check-circle"></i> Concluída</span>
-                            `}
+                        <p class="text-sm text-gray-600 mb-3 whitespace-pre-wrap">${escapeHtml(task.description || 'Nenhuma descrição fornecida.')}</p>
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500 font-medium">
+                            <span><i class="fas fa-user-edit mr-1"></i> ${escapeHtml(task.createdBy)}</span>
+                            ${task.assignedTo ? `<span><i class="fas fa-paper-plane mr-1"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
+                            ${task.completedBy ? `<span class="text-green-600"><i class="fas fa-check-double mr-1"></i> Finalizado por ${escapeHtml(task.completedBy)}</span>` : ''}
                         </div>
+                    </div>
+                    <div class="flex sm:flex-col justify-end gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-3 sm:pt-0 sm:pl-3">
+                        ${!task.completed ? `
+                            <button onclick="startTask('${task.id}')" class="flex-1 sm:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg text-sm transition font-medium flex items-center justify-center gap-2">
+                                <i class="fas fa-play"></i> Iniciar
+                            </button>
+                            <button onclick="completeTask('${task.id}')" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition font-medium flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fas fa-check"></i> Concluir
+                            </button>
+                        ` : `
+                            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 w-full">
+                                <i class="fas fa-check-circle text-lg"></i> Concluída
+                            </div>
+                        `}
                     </div>
                 </div>
             `).join('');
         }
 
         async function startTask(taskId) {
-            await db.collection('tasks').doc(taskId).update({
-                activeUser: currentUser.displayName || currentUser.email,
-                activeStart: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            // Send notification
-            showNotification(`Você iniciou a tarefa`, 'success');
+            try {
+                await db.collection('tasks').doc(taskId).update({
+                    activeUser: currentUser.displayName || currentUser.email.split('@')[0],
+                    activeStart: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showNotification(`Tarefa iniciada!`, 'success');
+            } catch (error) {
+                showNotification('Erro ao iniciar tarefa', 'error');
+            }
         }
 
         async function completeTask(taskId) {
-            await db.collection('tasks').doc(taskId).update({
-                completed: true,
-                completedBy: currentUser.displayName || currentUser.email,
-                completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                activeUser: null
-            });
-            showNotification('Tarefa concluída!', 'success');
+            try {
+                await db.collection('tasks').doc(taskId).update({
+                    completed: true,
+                    completedBy: currentUser.displayName || currentUser.email.split('@')[0],
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    activeUser: null
+                });
+                showNotification('Trabalho excelente! Tarefa concluída.', 'success');
+            } catch (error) {
+                showNotification('Erro ao concluir tarefa', 'error');
+            }
         }
 
         async function createTask() {
-            const title = document.getElementById('taskTitle').value;
-            const desc = document.getElementById('taskDesc').value;
+            const title = document.getElementById('taskTitle').value.trim();
+            const desc = document.getElementById('taskDesc').value.trim();
             const priority = document.getElementById('taskPriority').value;
-            const inviteEmail = document.getElementById('inviteEmail').value;
+            const inviteEmail = document.getElementById('inviteEmail').value.trim();
             
             if (!title) {
-                showNotification('Digite um título para a tarefa', 'error');
+                showNotification('Por favor, digite um título para a tarefa!', 'error');
+                document.getElementById('taskTitle').focus();
                 return;
             }
             
             const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
             
-            await db.collection('tasks').add({
-                title: title,
-                description: desc,
-                priority: priority,
-                priorityValue: priorityValue,
-                date: currentDate,
-                createdBy: currentUser.displayName || currentUser.email,
-                createdByUid: currentUser.uid,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                completed: false,
-                assignedTo: inviteEmail || null,
-                activeUser: null
-            });
-            
-            if (inviteEmail) {
-                // Notify invited user (simplified)
-                console.log(`Convidado ${inviteEmail} para a tarefa`);
+            try {
+                await db.collection('tasks').add({
+                    title: title,
+                    description: desc,
+                    priority: priority,
+                    priorityValue: priorityValue,
+                    date: currentDate,
+                    createdBy: currentUser.displayName || currentUser.email.split('@')[0],
+                    createdByUid: currentUser.uid,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    completed: false,
+                    assignedTo: inviteEmail || null,
+                    activeUser: null
+                });
+                
+                closeModal('taskModal');
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskDesc').value = '';
+                document.getElementById('inviteEmail').value = '';
+                document.getElementById('taskPriority').value = 'media';
+                showNotification('Tarefa criada com sucesso!', 'success');
+            } catch (error) {
+                showNotification('Erro ao criar tarefa. Verifique as permissões.', 'error');
             }
-            
-            closeModal('taskModal');
-            document.getElementById('taskTitle').value = '';
-            document.getElementById('taskDesc').value = '';
-            document.getElementById('inviteEmail').value = '';
-            showNotification('Tarefa criada com sucesso!', 'success');
         }
 
         async function uploadFiles(input) {
             const files = Array.from(input.files);
+            if(files.length === 0) return;
+
+            showNotification('Iniciando upload...', 'success');
+            
             for (const file of files) {
-                const storageRef = storage.ref(`files/${currentDate}/${Date.now()}_${file.name}`);
-                await storageRef.put(file);
-                const url = await storageRef.getDownloadURL();
-                
-                await db.collection('files').add({
-                    name: file.name,
-                    url: url,
-                    size: file.size,
-                    type: file.type,
-                    uploadedBy: currentUser.displayName || currentUser.email,
-                    uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    date: currentDate
-                });
+                try {
+                    const storageRef = storage.ref(`files/${currentDate}/${Date.now()}_${file.name}`);
+                    await storageRef.put(file);
+                    const url = await storageRef.getDownloadURL();
+                    
+                    await db.collection('files').add({
+                        name: file.name,
+                        url: url,
+                        size: file.size,
+                        type: file.type,
+                        uploadedBy: currentUser.displayName || currentUser.email.split('@')[0],
+                        uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        date: currentDate
+                    });
+                } catch (error) {
+                    console.error(error);
+                    showNotification(`Erro ao subir ${file.name}`, 'error');
+                }
             }
-            showNotification(`${files.length} arquivo(s) enviado(s)!`, 'success');
+            showNotification(`Upload concluído!`, 'success');
             loadFiles();
+            input.value = ''; // Limpar input
         }
 
         async function loadFiles() {
-            const filesSnapshot = await db.collection('files')
-                .orderBy('uploadedAt', 'desc')
-                .limit(20)
-                .get();
-            
-            const files = [];
-            filesSnapshot.forEach(doc => {
-                files.push({ id: doc.id, ...doc.data() });
-            });
-            
-            displayFiles(files);
+            try {
+                const filesSnapshot = await db.collection('files')
+                    .orderBy('uploadedAt', 'desc')
+                    .limit(20)
+                    .get();
+                
+                const files = [];
+                filesSnapshot.forEach(doc => {
+                    files.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayFiles(files);
+            } catch(error) {
+                console.error("Erro ao carregar arquivos", error);
+            }
         }
 
         function displayFiles(files) {
             const container = document.getElementById('filesList');
             if (files.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-4">Nenhum arquivo compartilhado</div>';
+                container.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg">Nenhum arquivo compartilhado ainda.</div>';
                 return;
             }
             
             container.innerHTML = files.map(file => `
-                <div class="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
-                    <div class="flex items-center gap-2 flex-1">
-                        <i class="fas ${getFileIcon(file.type)} text-gray-600"></i>
-                        <span class="text-sm truncate flex-1">${escapeHtml(file.name)}</span>
-                        <span class="text-xs text-gray-500">${formatFileSize(file.size)}</span>
+                <div class="bg-white border border-gray-100 hover:border-blue-200 shadow-sm rounded-lg p-3 flex justify-between items-center transition">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+                            <i class="fas ${getFileIcon(file.type)} text-lg"></i>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-sm font-medium text-gray-800 truncate block">${escapeHtml(file.name)}</span>
+                            <span class="text-xs text-gray-500">${formatFileSize(file.size)} • ${escapeHtml(file.uploadedBy)}</span>
+                        </div>
                     </div>
-                    <a href="${file.url}" download class="text-indigo-600 hover:text-indigo-800">
+                    <a href="${file.url}" target="_blank" download class="w-10 h-10 rounded-full hover:bg-blue-50 flex items-center justify-center text-blue-600 transition shrink-0 ml-2">
                         <i class="fas fa-download"></i>
                     </a>
                 </div>
@@ -429,55 +449,59 @@
         function displayActiveUsers(users) {
             const container = document.getElementById('activeUsersList');
             if (users.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-4">Ninguém ativo no momento</div>';
+                container.innerHTML = '<div class="text-sm text-gray-500 py-2">Somente você está online agora.</div>';
                 return;
             }
             
             container.innerHTML = users.map(user => `
-                <div class="flex items-center gap-3 p-2 bg-green-50 rounded-lg">
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span class="text-sm font-medium">${user.name || user.email}</span>
+                <div class="flex items-center gap-3 p-3 bg-white border border-gray-100 shadow-sm rounded-lg">
+                    <div class="relative">
+                        <div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                            ${(user.name || user.email).charAt(0).toUpperCase()}
+                        </div>
+                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 truncate">${escapeHtml(user.name || user.email.split('@')[0])}</span>
                 </div>
             `).join('');
         }
 
-// Substitua a função signInWithGoogle por esta:
-async function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    
-    try {
-        // Usando popup em vez de redirect - MAIS ESTÁVEL
-        const result = await firebase.auth().signInWithPopup(provider);
-        console.log('Usuário logado:', result.user);
-        showNotification('Login realizado com sucesso!', 'success');
-    } catch (error) {
-        console.error('Erro detalhado:', error);
-        
-        // Fallback: tenta redirect se popup falhar
-        if (error.code === 'auth/popup-blocked') {
-            showNotification('Popup bloqueado! Clique novamente.', 'error');
-            await firebase.auth().signInWithRedirect(provider);
-        } else {
-            showNotification('Erro: ' + error.message, 'error');
+        async function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                const result = await firebase.auth().signInWithPopup(provider);
+                console.log('Usuário logado:', result.user);
+                showNotification('Bem-vindo de volta!', 'success');
+            } catch (error) {
+                console.error('Erro detalhado:', error);
+                if (error.code === 'auth/popup-blocked') {
+                    showNotification('Aviso: Popup bloqueado pelo navegador. Redirecionando...', 'error');
+                    await firebase.auth().signInWithRedirect(provider);
+                } else {
+                    showNotification('Erro no login: ' + error.message, 'error');
+                }
+            }
         }
-    }
-}
 
         function logout() {
             auth.signOut();
         }
 
         function changeDate(delta) {
-            const date = new Date(currentDate);
+            // Corrige o salto de timezone ao alterar a data
+            const [year, month, day] = currentDate.split('-');
+            const date = new Date(year, month - 1, day);
             date.setDate(date.getDate() + delta);
-            currentDate = date.toISOString().split('T')[0];
+            currentDate = getLocalISODate(date);
             document.getElementById('datePicker').value = currentDate;
             loadTasks();
         }
 
         function showAddTaskModal() {
-            document.getElementById('taskModal').classList.remove('hidden');
-            document.getElementById('taskModal').classList.add('flex');
+            const modal = document.getElementById('taskModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('taskTitle').focus(), 100);
         }
 
         function closeModal(modalId) {
@@ -486,35 +510,61 @@ async function signInWithGoogle() {
         }
 
         function getPriorityColor(priority) {
-            return { alta: 'border-red-500', media: 'border-yellow-500', baixa: 'border-green-500' }[priority];
+            return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500';
         }
 
         function getPriorityBadge(priority) {
-            return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority];
+            return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-800', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700';
         }
 
         function getFileIcon(type) {
+            if (!type) return 'fa-file text-gray-400';
             if (type.includes('pdf')) return 'fa-file-pdf text-red-500';
-            if (type.includes('image')) return 'fa-file-image text-blue-500';
-            if (type.includes('excel') || type.includes('sheet')) return 'fa-file-excel text-green-500';
-            return 'fa-file text-gray-500';
+            if (type.includes('image')) return 'fa-image text-blue-500';
+            if (type.includes('excel') || type.includes('spreadsheet') || type.includes('csv')) return 'fa-file-excel text-green-600';
+            if (type.includes('word') || type.includes('document')) return 'fa-file-word text-blue-700';
+            if (type.includes('zip') || type.includes('compressed')) return 'fa-file-archive text-yellow-600';
+            return 'fa-file-alt text-gray-500';
         }
 
         function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / 1048576).toFixed(1) + ' MB';
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
         function showNotification(message, type) {
             const notification = document.createElement('div');
-            notification.className = `fixed top-20 right-4 z-50 px-6 py-3 rounded-lg shadow-lg animate-bounce ${type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white`;
-            notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'} mr-2"></i>${message}`;
+            notification.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 sm:bottom-auto sm:top-20 sm:left-auto sm:right-4 sm:translate-x-0 z-[60] px-6 py-3 rounded-xl shadow-2xl transition-all duration-300 font-medium flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-gray-900'} text-white w-[90%] sm:w-auto max-w-sm`;
+            
+            notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle text-red-300' : 'fa-check-circle text-green-400'} text-lg"></i> <span>${message}</span>`;
+            
             document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+            
+            // Animação de entrada
+            notification.animate([
+                { opacity: 0, transform: 'translateY(20px) translateX(-50%)' },
+                { opacity: 1, transform: 'translateY(0) translateX(-50%)' }
+            ], { duration: 300, fill: 'forwards' });
+
+            // Ajuste para Desktop na animação
+            if(window.innerWidth > 640) {
+                notification.animate([
+                    { opacity: 0, transform: 'translateX(20px)' },
+                    { opacity: 1, transform: 'translateX(0)' }
+                ], { duration: 300, fill: 'forwards' });
+            }
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3500);
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
@@ -523,13 +573,22 @@ async function signInWithGoogle() {
         // Set today's date in picker
         document.getElementById('datePicker').value = currentDate;
         document.getElementById('datePicker').addEventListener('change', (e) => {
-            currentDate = e.target.value;
-            loadTasks();
+            if(e.target.value) {
+                currentDate = e.target.value;
+                loadTasks();
+            }
         });
 
         // Close modal on click outside
         document.getElementById('taskModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('taskModal')) closeModal('taskModal');
+        });
+        
+        // Pressionar ESC para fechar modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('taskModal').classList.contains('hidden')) {
+                closeModal('taskModal');
+            }
         });
     </script>
 </body>
