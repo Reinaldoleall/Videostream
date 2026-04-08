@@ -13,32 +13,22 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         * { font-family: 'Inter', sans-serif; }
-        .task-card {
-            transition: all 0.3s ease;
-        }
-        .task-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #c7c7c7;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a0a0a0;
-        }
-        /* Garantir que textos longos não quebrem o layout */
+        .task-card { transition: all 0.3s ease; }
+        .task-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
         .break-words { word-wrap: break-word; word-break: break-word; }
+        
+        /* Estilos das Abas */
+        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background-color: #e0e7ff; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen text-gray-800">
+<body class="bg-gray-50 min-h-screen text-gray-800">
     <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div class="text-center">
             <i class="fas fa-tasks text-6xl text-indigo-600 animate-bounce"></i>
@@ -46,112 +36,152 @@
         </div>
     </div>
 
-    <div id="loginContainer" class="min-h-screen flex items-center justify-center px-4 hidden">
+    <div id="loginContainer" class="min-h-screen flex items-center justify-center px-4 hidden bg-gradient-to-br from-blue-50 to-indigo-100">
         <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
             <div class="text-center mb-8">
-                <i class="fas fa-tasks text-5xl text-indigo-600"></i>
+                <div class="bg-indigo-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-tasks text-4xl text-indigo-600"></i>
+                </div>
                 <h1 class="text-3xl font-bold mt-4 text-gray-800">TaskFlow</h1>
-                <p class="text-gray-500 mt-2">Agenda Colaborativa em Tempo Real</p>
+                <p class="text-gray-500 mt-2">Sua área de trabalho organizada.</p>
             </div>
-            <button onclick="signInWithGoogle()" class="w-full bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-95">
+            <button onclick="signInWithGoogle()" class="w-full bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3">
                 <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
                 Entrar com Google
             </button>
         </div>
     </div>
 
-    <div id="appContainer" class="hidden">
-        <div class="bg-white shadow-md sticky top-0 z-20">
-            <div class="container mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-3">
+    <div id="appContainer" class="hidden flex flex-col min-h-screen">
+        <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <i class="fas fa-tasks text-2xl text-indigo-600"></i>
-                    <h1 class="text-xl sm:text-2xl font-bold text-gray-800">TaskFlow</h1>
-                </div>
-                <div class="flex items-center gap-2 sm:gap-4 ml-auto">
-                    <div class="hidden sm:flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
-                        <i class="fas fa-user-circle text-gray-600"></i>
-                        <span id="userName" class="text-sm font-medium text-gray-700 truncate max-w-[120px]"></span>
+                    <div class="bg-indigo-600 text-white w-8 h-8 rounded flex items-center justify-center">
+                        <i class="fas fa-tasks"></i>
                     </div>
-                    <button onclick="logout()" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 px-3 py-2 sm:px-4 rounded-lg transition text-sm font-medium flex items-center gap-2">
-                        <i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Sair</span>
+                    <h1 class="text-xl font-bold text-gray-800 hidden sm:block">TaskFlow</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
+                        <img id="userAvatar" src="" class="w-6 h-6 rounded-full bg-gray-300 hidden">
+                        <i id="userIconFallback" class="fas fa-user-circle text-gray-500 text-xl"></i>
+                        <span id="userName" class="text-sm font-medium text-gray-700 truncate max-w-[100px] sm:max-w-[150px]"></span>
+                    </div>
+                    <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition p-2" title="Sair">
+                        <i class="fas fa-sign-out-alt text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="container mx-auto px-2">
+                <div class="flex overflow-x-auto hide-scrollbar">
+                    <button onclick="switchTab('tasks')" id="btn-tab-tasks" class="tab-btn active flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 border-transparent transition-colors whitespace-nowrap">
+                        <i class="fas fa-list-check"></i> Tarefas
+                    </button>
+                    <button onclick="switchTab('files')" id="btn-tab-files" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors whitespace-nowrap">
+                        <i class="fas fa-folder-open"></i> Arquivos
+                    </button>
+                    <button onclick="switchTab('team')" id="btn-tab-team" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors whitespace-nowrap">
+                        <i class="fas fa-users"></i> Equipe
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="container mx-auto px-3 sm:px-4 py-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-6">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center w-full sm:w-auto justify-between sm:justify-start gap-2 sm:gap-4">
-                        <button onclick="changeDate(-1)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex items-center gap-1 sm:gap-2">
-                            <i class="fas fa-chevron-left"></i> <span class="hidden sm:inline">Anterior</span>
+        <div class="container mx-auto px-4 py-6 flex-1 max-w-4xl">
+            
+            <div id="tab-tasks" class="tab-content active">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center w-full sm:w-auto justify-between sm:justify-start gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                        <button onclick="changeDate(-1)" class="p-2 text-gray-600 hover:bg-white hover:shadow-sm rounded transition">
+                            <i class="fas fa-chevron-left"></i>
                         </button>
-                        <input type="date" id="datePicker" class="border-2 border-gray-200 rounded-lg px-2 sm:px-4 py-2 focus:border-indigo-500 outline-none text-sm sm:text-base w-full sm:w-auto text-center">
-                        <button onclick="changeDate(1)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-2 rounded-lg transition text-sm sm:text-base flex items-center gap-1 sm:gap-2">
-                            <span class="hidden sm:inline">Próximo</span> <i class="fas fa-chevron-right"></i>
+                        <input type="date" id="datePicker" class="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 outline-none text-center cursor-pointer">
+                        <button onclick="changeDate(1)" class="p-2 text-gray-600 hover:bg-white hover:shadow-sm rounded transition">
+                            <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
-                    <button onclick="showAddTaskModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition shadow-md flex items-center justify-center gap-2 font-medium">
+                    <button onclick="showAddTaskModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg transition shadow-sm flex items-center justify-center gap-2 font-medium">
                         <i class="fas fa-plus"></i> Nova Tarefa
                     </button>
                 </div>
+
+                <div id="tasksList" class="space-y-3 pb-20"></div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                        <h2 class="text-lg sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
-                            <i class="fas fa-list-check text-indigo-600"></i> Tarefas do Dia
-                        </h2>
-                        <div id="tasksList" class="space-y-3 max-h-[60vh] lg:max-h-[600px] overflow-y-auto pr-2"></div>
-                    </div>
-                </div>
-
-                <div class="space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                        <h3 class="text-md sm:text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
-                            <i class="fas fa-users text-green-600"></i> Trabalhando Agora
-                        </h3>
-                        <div id="activeUsersList" class="space-y-2 max-h-[200px] overflow-y-auto pr-2"></div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                        <div class="flex justify-between items-center mb-4 gap-2">
-                            <h3 class="text-md sm:text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <i class="fas fa-paperclip text-blue-600"></i> Arquivos
-                            </h3>
-                            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg text-sm transition font-medium whitespace-nowrap">
-                                <i class="fas fa-upload mr-1"></i> Upload
-                            </button>
-                            <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
+            <div id="tab-files" class="tab-content">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-gray-100 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Cofre de Arquivos</h2>
+                            <p class="text-sm text-gray-500">Documentos compartilhados com a equipe.</p>
                         </div>
-                        <div id="filesList" class="space-y-2 max-h-[300px] overflow-y-auto pr-2"></div>
+                        <button onclick="document.getElementById('fileInput').click()" class="w-full sm:w-auto bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-4 py-2 rounded-lg text-sm transition font-medium flex items-center justify-center gap-2">
+                            <i class="fas fa-cloud-upload-alt"></i> Fazer Upload
+                        </button>
+                        <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
                     </div>
+                    <div id="filesList" class="space-y-3"></div>
                 </div>
             </div>
+
+            <div id="tab-team" class="tab-content">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="mb-6 border-b border-gray-100 pb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Usuários Online</h2>
+                        <p class="text-sm text-gray-500">Quem está com o TaskFlow aberto agora.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="activeUsersList"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <div id="taskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Nova Tarefa</h3>
-            <input type="text" id="taskTitle" placeholder="Título da tarefa" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
-            <textarea id="taskDesc" placeholder="Descrição (Opcional)" rows="3" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition resize-none"></textarea>
-            <select id="taskPriority" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition bg-white">
-                <option value="alta">🔴 Alta Prioridade</option>
-                <option value="media" selected>🟡 Média Prioridade</option>
-                <option value="baixa">🟢 Baixa Prioridade</option>
-            </select>
-            <input type="email" id="inviteEmail" placeholder="Convidar por email (opcional)" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 mb-5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
-            <div class="flex gap-3">
-                <button onclick="createTask()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg transition font-medium">Criar Tarefa</button>
-                <button onclick="closeModal('taskModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-lg transition font-medium">Cancelar</button>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-xl font-bold text-gray-800">Criar Nova Tarefa</h3>
+                <button onclick="closeModal('taskModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Título</label>
+                    <input type="text" id="taskTitle" placeholder="Ex: Revisar relatório financeiro" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição</label>
+                    <textarea id="taskDesc" placeholder="Detalhes da tarefa..." rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition resize-none"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Prioridade</label>
+                        <select id="taskPriority" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:border-indigo-500 outline-none transition bg-white text-sm">
+                            <option value="alta">🔴 Alta</option>
+                            <option value="media" selected>🟡 Média</option>
+                            <option value="baixa">🟢 Baixa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Atribuir para (Email)</label>
+                        <input type="email" id="inviteEmail" placeholder="opcional@email.com" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:border-indigo-500 outline-none transition text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button onclick="createTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg transition font-semibold shadow-md flex justify-center items-center gap-2">
+                    <i class="fas fa-check"></i> Salvar Tarefa
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuração do Firebase fornecida
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
             authDomain: "marketplaceconnect-af26d.firebaseapp.com",
@@ -163,7 +193,6 @@
             measurementId: "G-7HHR78MHDP"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -171,7 +200,7 @@
 
         let currentUser = null;
         
-        // Função para pegar a data local formatada sem sofrer com timezone UTC
+        // Data Local
         function getLocalISODate(d) {
             const date = new Date(d);
             const offset = date.getTimezoneOffset();
@@ -181,14 +210,40 @@
 
         let currentDate = getLocalISODate(new Date());
 
-        // Observer do Estado de Autenticação
+        // Lógica de Abas
+        function switchTab(tabId) {
+            // Esconde todas as abas
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'text-indigo-600', 'border-indigo-600', 'bg-indigo-50');
+                el.classList.add('text-gray-500', 'border-transparent');
+            });
+
+            // Mostra a aba selecionada
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const btn = document.getElementById(`btn-tab-${tabId}`);
+            btn.classList.add('active', 'text-indigo-600', 'border-indigo-600');
+            btn.classList.remove('text-gray-500', 'border-transparent');
+            
+            // Mobile: adiciona fundo levinho
+            if(window.innerWidth < 640) btn.classList.add('bg-indigo-50');
+        }
+
+        // Estado da Autenticação
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('flex');
+                
                 document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+                if(user.photoURL) {
+                    document.getElementById('userAvatar').src = user.photoURL;
+                    document.getElementById('userAvatar').classList.remove('hidden');
+                    document.getElementById('userIconFallback').classList.add('hidden');
+                }
                 
                 await initializeUser();
                 loadTasks();
@@ -199,60 +254,53 @@
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginContainer').classList.remove('hidden');
                 document.getElementById('appContainer').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('flex');
             }
         });
 
         async function initializeUser() {
-            await db.collection('users').doc(currentUser.uid).set({
-                email: currentUser.email,
-                name: currentUser.displayName || currentUser.email.split('@')[0],
-                photoURL: currentUser.photoURL || '',
-                lastActive: firebase.firestore.FieldValue.serverTimestamp(),
-                online: true
-            }, { merge: true });
+            try {
+                await db.collection('users').doc(currentUser.uid).set({
+                    email: currentUser.email,
+                    name: currentUser.displayName || currentUser.email.split('@')[0],
+                    photoURL: currentUser.photoURL || '',
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+                    online: true
+                }, { merge: true });
+            } catch (e) { console.error("Erro ao iniciar user:", e); }
         }
 
         function setupActiveStatus() {
             const userRef = db.collection('users').doc(currentUser.uid);
-            
             const updateStatus = () => {
-                userRef.update({
-                    lastActive: firebase.firestore.FieldValue.serverTimestamp(),
-                    online: true
-                }).catch(()=>console.log("Erro ao atualizar status."));
+                userRef.update({ lastActive: firebase.firestore.FieldValue.serverTimestamp(), online: true }).catch(()=>{});
             };
-            
             updateStatus();
             setInterval(updateStatus, 30000);
-            
-            window.addEventListener('beforeunload', () => {
-                userRef.update({ online: false });
-            });
+            window.addEventListener('beforeunload', () => userRef.update({ online: false }));
         }
 
         function setupRealtimeListeners() {
+            // Ouvinte de Usuários
             db.collection('users').where('online', '==', true)
                 .onSnapshot((snapshot) => {
                     const activeUsers = [];
                     snapshot.forEach(doc => {
-                        if (doc.id !== currentUser.uid) {
-                            activeUsers.push(doc.data());
-                        }
+                        if (doc.id !== currentUser.uid) activeUsers.push(doc.data());
                     });
                     displayActiveUsers(activeUsers);
-                }, (error) => console.error(error));
+                });
             
-            db.collection('tasks')
-                .where('date', '==', currentDate)
-                .orderBy('priorityValue', 'desc')
-                .onSnapshot(() => loadTasks(), (error) => console.error(error));
+            // Ouvinte de Tarefas (SEM orderBy para evitar erro de índice no Firebase)
+            db.collection('tasks').where('date', '==', currentDate)
+                .onSnapshot(() => loadTasks());
         }
 
         async function loadTasks() {
             try {
+                // Removemos o .orderBy() para o Firebase não travar.
                 const tasksSnapshot = await db.collection('tasks')
                     .where('date', '==', currentDate)
-                    .orderBy('priorityValue', 'desc')
                     .get();
                 
                 const tasks = [];
@@ -260,45 +308,57 @@
                     tasks.push({ id: doc.id, ...doc.data() });
                 });
                 
+                // Fazemos a ordenação no próprio JavaScript (Alta > Media > Baixa)
+                tasks.sort((a, b) => b.priorityValue - a.priorityValue);
+                
                 displayTasks(tasks);
             } catch (error) {
                 console.error("Erro ao carregar tarefas:", error);
+                showNotification('Erro ao puxar tarefas. Verifique as Regras de Segurança no Firebase.', 'error');
             }
         }
 
         function displayTasks(tasks) {
             const container = document.getElementById('tasksList');
             if (tasks.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">Nenhuma tarefa para este dia. Aproveite! 🎉</div>';
+                container.innerHTML = `
+                    <div class="text-center bg-white border border-dashed border-gray-300 rounded-xl py-12 px-4">
+                        <div class="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-mug-hot text-2xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-800">Nenhuma tarefa hoje</h3>
+                        <p class="text-sm text-gray-500 mt-1">Sua agenda está livre! Que tal adicionar algo?</p>
+                        <button onclick="showAddTaskModal()" class="mt-4 text-indigo-600 font-medium hover:underline text-sm">Criar primeira tarefa</button>
+                    </div>`;
                 return;
             }
             
             container.innerHTML = tasks.map(task => `
-                <div class="task-card bg-white rounded-lg p-4 border border-gray-100 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col sm:flex-row justify-between gap-4">
+                <div class="task-card bg-white rounded-xl p-4 border border-gray-200 shadow-sm border-l-4 ${getPriorityColor(task.priority)} flex flex-col sm:flex-row justify-between gap-4">
                     <div class="flex-1 break-words overflow-hidden">
                         <div class="flex flex-wrap items-center gap-2 mb-2">
                             <h4 class="font-bold text-gray-800 text-lg">${escapeHtml(task.title)}</h4>
-                            <span class="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${getPriorityBadge(task.priority)}">${task.priority}</span>
-                            ${task.activeUser ? `<span class="text-[10px] sm:text-xs bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-medium animate-pulse"><i class="fas fa-cog fa-spin"></i> ${escapeHtml(task.activeUser)} na ativa</span>` : ''}
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${getPriorityBadge(task.priority)}">${task.priority}</span>
+                            ${task.activeUser ? `<span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold animate-pulse"><i class="fas fa-bolt text-yellow-500"></i> ${escapeHtml(task.activeUser)} fazendo</span>` : ''}
                         </div>
-                        <p class="text-sm text-gray-600 mb-3 whitespace-pre-wrap">${escapeHtml(task.description || 'Nenhuma descrição fornecida.')}</p>
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500 font-medium">
-                            <span><i class="fas fa-user-edit mr-1"></i> ${escapeHtml(task.createdBy)}</span>
-                            ${task.assignedTo ? `<span><i class="fas fa-paper-plane mr-1"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
-                            ${task.completedBy ? `<span class="text-green-600"><i class="fas fa-check-double mr-1"></i> Finalizado por ${escapeHtml(task.completedBy)}</span>` : ''}
+                        <p class="text-sm text-gray-600 mb-3 whitespace-pre-wrap">${escapeHtml(task.description || 'Sem descrição.')}</p>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 font-medium">
+                            <span class="bg-gray-100 px-2 py-1 rounded"><i class="fas fa-user mr-1"></i> ${escapeHtml(task.createdBy)}</span>
+                            ${task.assignedTo ? `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded"><i class="fas fa-at mr-1"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
                         </div>
                     </div>
-                    <div class="flex sm:flex-col justify-end gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-3 sm:pt-0 sm:pl-3">
+                    <div class="flex sm:flex-col justify-end gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-3 sm:pt-0 sm:pl-4 min-w-[120px]">
                         ${!task.completed ? `
-                            <button onclick="startTask('${task.id}')" class="flex-1 sm:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg text-sm transition font-medium flex items-center justify-center gap-2">
+                            <button onclick="startTask('${task.id}')" class="flex-1 sm:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-lg text-sm transition font-semibold flex items-center justify-center gap-2">
                                 <i class="fas fa-play"></i> Iniciar
                             </button>
-                            <button onclick="completeTask('${task.id}')" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition font-medium flex items-center justify-center gap-2 shadow-sm">
-                                <i class="fas fa-check"></i> Concluir
+                            <button onclick="completeTask('${task.id}')" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm transition font-semibold flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fas fa-check"></i> Fechar
                             </button>
                         ` : `
-                            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 w-full">
-                                <i class="fas fa-check-circle text-lg"></i> Concluída
+                            <div class="bg-green-50 text-green-700 px-3 py-2 rounded-lg text-sm font-bold flex flex-col items-center justify-center gap-1 w-full h-full text-center">
+                                <i class="fas fa-check-circle text-xl"></i>
+                                <span class="text-[10px] text-green-600">por ${escapeHtml(task.completedBy)}</span>
                             </div>
                         `}
                     </div>
@@ -312,10 +372,7 @@
                     activeUser: currentUser.displayName || currentUser.email.split('@')[0],
                     activeStart: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                showNotification(`Tarefa iniciada!`, 'success');
-            } catch (error) {
-                showNotification('Erro ao iniciar tarefa', 'error');
-            }
+            } catch (error) { showNotification('Erro ao iniciar', 'error'); }
         }
 
         async function completeTask(taskId) {
@@ -326,10 +383,8 @@
                     completedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     activeUser: null
                 });
-                showNotification('Trabalho excelente! Tarefa concluída.', 'success');
-            } catch (error) {
-                showNotification('Erro ao concluir tarefa', 'error');
-            }
+                showNotification('Tarefa Concluída! 🎉', 'success');
+            } catch (error) { showNotification('Erro ao concluir', 'error'); }
         }
 
         async function createTask() {
@@ -339,7 +394,7 @@
             const inviteEmail = document.getElementById('inviteEmail').value.trim();
             
             if (!title) {
-                showNotification('Por favor, digite um título para a tarefa!', 'error');
+                showNotification('O título é obrigatório!', 'error');
                 document.getElementById('taskTitle').focus();
                 return;
             }
@@ -347,11 +402,15 @@
             const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
             
             try {
+                const btn = document.querySelector('#taskModal button');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                btn.disabled = true;
+
                 await db.collection('tasks').add({
                     title: title,
                     description: desc,
                     priority: priority,
-                    priorityValue: priorityValue,
+                    priorityValue: priorityValue, // Salvo para ordenar no JS depois
                     date: currentDate,
                     createdBy: currentUser.displayName || currentUser.email.split('@')[0],
                     createdByUid: currentUser.uid,
@@ -366,17 +425,23 @@
                 document.getElementById('taskDesc').value = '';
                 document.getElementById('inviteEmail').value = '';
                 document.getElementById('taskPriority').value = 'media';
+                
+                btn.innerHTML = '<i class="fas fa-check"></i> Salvar Tarefa';
+                btn.disabled = false;
+                
                 showNotification('Tarefa criada com sucesso!', 'success');
+                loadTasks(); // Força atualização na tela
             } catch (error) {
-                showNotification('Erro ao criar tarefa. Verifique as permissões.', 'error');
+                console.error(error);
+                showNotification('Erro ao salvar. Verifique o banco de dados.', 'error');
+                document.querySelector('#taskModal button').disabled = false;
             }
         }
 
         async function uploadFiles(input) {
             const files = Array.from(input.files);
             if(files.length === 0) return;
-
-            showNotification('Iniciando upload...', 'success');
+            showNotification('Fazendo upload...', 'success');
             
             for (const file of files) {
                 try {
@@ -393,53 +458,41 @@
                         uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         date: currentDate
                     });
-                } catch (error) {
-                    console.error(error);
-                    showNotification(`Erro ao subir ${file.name}`, 'error');
-                }
+                } catch (error) { showNotification(`Erro no arquivo ${file.name}`, 'error'); }
             }
             showNotification(`Upload concluído!`, 'success');
             loadFiles();
-            input.value = ''; // Limpar input
+            input.value = ''; 
         }
 
         async function loadFiles() {
             try {
-                const filesSnapshot = await db.collection('files')
-                    .orderBy('uploadedAt', 'desc')
-                    .limit(20)
-                    .get();
-                
+                const filesSnapshot = await db.collection('files').orderBy('uploadedAt', 'desc').limit(20).get();
                 const files = [];
-                filesSnapshot.forEach(doc => {
-                    files.push({ id: doc.id, ...doc.data() });
-                });
-                
+                filesSnapshot.forEach(doc => { files.push({ id: doc.id, ...doc.data() }); });
                 displayFiles(files);
-            } catch(error) {
-                console.error("Erro ao carregar arquivos", error);
-            }
+            } catch(error) { console.error(error); }
         }
 
         function displayFiles(files) {
             const container = document.getElementById('filesList');
             if (files.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg">Nenhum arquivo compartilhado ainda.</div>';
+                container.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Nenhum arquivo no cofre ainda.</div>';
                 return;
             }
             
             container.innerHTML = files.map(file => `
-                <div class="bg-white border border-gray-100 hover:border-blue-200 shadow-sm rounded-lg p-3 flex justify-between items-center transition">
+                <div class="bg-gray-50 border border-gray-200 hover:border-blue-300 rounded-xl p-3 flex justify-between items-center transition">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
-                            <i class="fas ${getFileIcon(file.type)} text-lg"></i>
+                        <div class="w-12 h-12 bg-white rounded-lg shadow-sm flex items-center justify-center shrink-0 border border-gray-100">
+                            <i class="fas ${getFileIcon(file.type)} text-xl"></i>
                         </div>
                         <div class="flex flex-col min-w-0">
-                            <span class="text-sm font-medium text-gray-800 truncate block">${escapeHtml(file.name)}</span>
-                            <span class="text-xs text-gray-500">${formatFileSize(file.size)} • ${escapeHtml(file.uploadedBy)}</span>
+                            <span class="text-sm font-bold text-gray-800 truncate block">${escapeHtml(file.name)}</span>
+                            <span class="text-xs text-gray-500 mt-0.5">${formatFileSize(file.size)} • ${escapeHtml(file.uploadedBy)}</span>
                         </div>
                     </div>
-                    <a href="${file.url}" target="_blank" download class="w-10 h-10 rounded-full hover:bg-blue-50 flex items-center justify-center text-blue-600 transition shrink-0 ml-2">
+                    <a href="${file.url}" target="_blank" download class="w-10 h-10 rounded-full bg-white border border-gray-200 hover:bg-blue-50 flex items-center justify-center text-blue-600 transition shrink-0 ml-2 shadow-sm">
                         <i class="fas fa-download"></i>
                     </a>
                 </div>
@@ -449,19 +502,22 @@
         function displayActiveUsers(users) {
             const container = document.getElementById('activeUsersList');
             if (users.length === 0) {
-                container.innerHTML = '<div class="text-sm text-gray-500 py-2">Somente você está online agora.</div>';
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-6 text-sm bg-gray-50 rounded-lg border border-dashed border-gray-200">Ninguém da equipe está online.</div>';
                 return;
             }
             
             container.innerHTML = users.map(user => `
-                <div class="flex items-center gap-3 p-3 bg-white border border-gray-100 shadow-sm rounded-lg">
+                <div class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
                     <div class="relative">
-                        <div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm">
                             ${(user.name || user.email).charAt(0).toUpperCase()}
                         </div>
-                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div>
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                     </div>
-                    <span class="text-sm font-medium text-gray-700 truncate">${escapeHtml(user.name || user.email.split('@')[0])}</span>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-gray-800 truncate">${escapeHtml(user.name || user.email.split('@')[0])}</span>
+                        <span class="text-[10px] text-green-600 font-medium">Online agora</span>
+                    </div>
                 </div>
             `).join('');
         }
@@ -469,26 +525,17 @@
         async function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
             try {
-                const result = await firebase.auth().signInWithPopup(provider);
-                console.log('Usuário logado:', result.user);
-                showNotification('Bem-vindo de volta!', 'success');
+                await firebase.auth().signInWithPopup(provider);
             } catch (error) {
-                console.error('Erro detalhado:', error);
                 if (error.code === 'auth/popup-blocked') {
-                    showNotification('Aviso: Popup bloqueado pelo navegador. Redirecionando...', 'error');
                     await firebase.auth().signInWithRedirect(provider);
-                } else {
-                    showNotification('Erro no login: ' + error.message, 'error');
-                }
+                } else { showNotification('Erro no login.', 'error'); }
             }
         }
 
-        function logout() {
-            auth.signOut();
-        }
+        function logout() { auth.signOut(); }
 
         function changeDate(delta) {
-            // Corrige o salto de timezone ao alterar a data
             const [year, month, day] = currentDate.split('-');
             const date = new Date(year, month - 1, day);
             date.setDate(date.getDate() + delta);
@@ -509,14 +556,9 @@
             document.getElementById(modalId).classList.remove('flex');
         }
 
-        function getPriorityColor(priority) {
-            return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500';
-        }
-
-        function getPriorityBadge(priority) {
-            return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-800', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700';
-        }
-
+        function getPriorityColor(priority) { return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[priority] || 'border-gray-500'; }
+        function getPriorityBadge(priority) { return { alta: 'bg-red-100 text-red-700', media: 'bg-yellow-100 text-yellow-700', baixa: 'bg-green-100 text-green-700' }[priority] || 'bg-gray-100 text-gray-700'; }
+        
         function getFileIcon(type) {
             if (!type) return 'fa-file text-gray-400';
             if (type.includes('pdf')) return 'fa-file-pdf text-red-500';
@@ -529,38 +571,18 @@
 
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
         function showNotification(message, type) {
             const notification = document.createElement('div');
-            notification.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 sm:bottom-auto sm:top-20 sm:left-auto sm:right-4 sm:translate-x-0 z-[60] px-6 py-3 rounded-xl shadow-2xl transition-all duration-300 font-medium flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-gray-900'} text-white w-[90%] sm:w-auto max-w-sm`;
-            
-            notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle text-red-300' : 'fa-check-circle text-green-400'} text-lg"></i> <span>${message}</span>`;
-            
+            notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-6 py-3 rounded-xl shadow-lg font-medium flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white text-sm w-[90%] max-w-sm`;
+            notification.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> <span>${message}</span>`;
             document.body.appendChild(notification);
             
-            // Animação de entrada
-            notification.animate([
-                { opacity: 0, transform: 'translateY(20px) translateX(-50%)' },
-                { opacity: 1, transform: 'translateY(0) translateX(-50%)' }
-            ], { duration: 300, fill: 'forwards' });
-
-            // Ajuste para Desktop na animação
-            if(window.innerWidth > 640) {
-                notification.animate([
-                    { opacity: 0, transform: 'translateX(20px)' },
-                    { opacity: 1, transform: 'translateX(0)' }
-                ], { duration: 300, fill: 'forwards' });
-            }
-
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => notification.remove(), 300);
-            }, 3500);
+            notification.animate([ { opacity: 0, transform: 'translateY(-20px) translateX(-50%)' }, { opacity: 1, transform: 'translateY(0) translateX(-50%)' } ], { duration: 300, fill: 'forwards' });
+            setTimeout(() => { notification.style.opacity = '0'; setTimeout(() => notification.remove(), 300); }, 3000);
         }
 
         function escapeHtml(text) {
@@ -570,25 +592,13 @@
             return div.innerHTML;
         }
 
-        // Set today's date in picker
         document.getElementById('datePicker').value = currentDate;
         document.getElementById('datePicker').addEventListener('change', (e) => {
-            if(e.target.value) {
-                currentDate = e.target.value;
-                loadTasks();
-            }
+            if(e.target.value) { currentDate = e.target.value; loadTasks(); }
         });
 
-        // Close modal on click outside
         document.getElementById('taskModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('taskModal')) closeModal('taskModal');
-        });
-        
-        // Pressionar ESC para fechar modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !document.getElementById('taskModal').classList.contains('hidden')) {
-                closeModal('taskModal');
-            }
         });
     </script>
 </body>
