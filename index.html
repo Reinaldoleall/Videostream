@@ -4,17 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Field Report | Coleta Inteligente</title>
-    <!-- Google Fonts + Tailwind + Material Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase Modular SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-        
-        window.FB = { initializeApp, getDatabase, ref, set, onValue, push, get, child, getStorage, storageRef, uploadBytes, getDownloadURL };
-    </script>
     <style>
         * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         .photo-slot {
@@ -37,15 +28,9 @@
             border-radius: 24px;
             background: #ffffff;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: box-shadow 0.2s;
-        }
-        .input-material {
-            transition: all 0.2s;
-            background-color: #ffffff;
         }
         .input-material:focus {
             border-color: #3b82f6;
-            ring: 2px solid #3b82f6;
             box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
         }
         .badge-history {
@@ -70,11 +55,11 @@
 <body class="bg-slate-50" style="background: #f7f9fc;">
 
     <div class="max-w-6xl mx-auto px-4 py-5 md:py-7">
-        <!-- Header compacto & profissional -->
+        <!-- Header -->
         <div class="flex flex-wrap justify-between items-end mb-5 gap-2">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-slate-800">Field Report</h1>
-                <p class="text-slate-500 text-sm font-medium">Sugestões automáticas • Histórico persistente</p>
+                <p class="text-slate-500 text-sm font-medium">Sugestões automáticas • Fotos locais • Histórico persistente</p>
             </div>
             <button id="openModalBtn" class="bg-white border border-slate-200 hover:border-slate-300 shadow-sm text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -82,16 +67,15 @@
             </button>
         </div>
 
-        <!-- Form principal - Card Material 3 clean -->
+        <!-- Form principal -->
         <div class="card-modern border border-slate-100 overflow-hidden mb-6">
             <div class="px-5 pt-5 pb-2 flex justify-between items-center">
                 <h2 class="text-base font-semibold text-slate-800">📋 Novo registro</h2>
                 <div class="text-[11px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-full">sugestões em tempo real</div>
             </div>
             <div class="p-5 pt-2">
-                <!-- Grid campos 2 colunas -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
-                    <div class="relative">
+                    <div>
                         <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Tipo</label>
                         <input type="text" id="tipo" class="input-material w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200" placeholder="Exposição e Abordagem" autocomplete="off">
                     </div>
@@ -133,40 +117,39 @@
                     </div>
                 </div>
 
-                <!-- Fotos: layout compacto com 6 slots estilo galeria -->
+                <!-- Fotos: armazenamento LOCAL (blobs) -->
                 <div class="mt-8">
                     <div class="flex items-baseline justify-between mb-3">
                         <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">📸 Fotos (máx 6)</label>
-                        <span class="text-[10px] text-slate-400">clique para anexar/substituir</span>
+                        <span class="text-[10px] text-slate-400">clique para anexar/substituir • armazenamento local</span>
                     </div>
                     <div id="photosContainer" class="grid grid-cols-3 sm:grid-cols-6 gap-3"></div>
                 </div>
 
-                <!-- Botões ação compactos e modernos -->
+                <!-- Botões -->
                 <div class="flex flex-wrap gap-3 mt-8 pt-1">
                     <button id="saveReportBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        Salvar
+                        Salvar relatório
                     </button>
                     <button id="shareWhatsBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                        WhatsApp
+                        Compartilhar (texto + fotos)
                     </button>
-                    <!-- Botão Lixeira: remove registro do histórico (excluir do Firebase/local) -->
-                    <button id="deleteHistoryBtn" class="bg-white border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                        Apagar selecionado
+                    <button id="clearFormBtn" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2"/><rect x="5" y="10" width="14" height="11" rx="1"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                        Limpar formulário
                     </button>
                 </div>
                 <div id="statusMsg" class="mt-3 text-sm text-center text-slate-500 min-h-[32px]"></div>
             </div>
         </div>
 
-        <!-- Histórico com lixeira: cada item terá ícone de lixeira para deletar individualmente -->
+        <!-- Histórico com lixeira individual -->
         <div class="card-modern border border-slate-100 overflow-hidden">
             <div class="px-5 py-3 border-b border-slate-100 bg-white/50 flex justify-between items-center">
                 <h3 class="text-sm font-semibold text-slate-700">📌 Últimos registros</h3>
-                <span class="text-[10px] text-slate-400">clique no item = auto preenchimento</span>
+                <span class="text-[10px] text-slate-400">clique no item = preencher • 🗑️ = excluir</span>
             </div>
             <div class="p-3 max-h-72 overflow-y-auto">
                 <div id="historyList" class="space-y-2">
@@ -176,12 +159,12 @@
         </div>
     </div>
 
-    <!-- Modal para carregar relatórios -->
+    <!-- Modal carregar relatórios -->
     <div id="autoModal" class="fixed inset-0 flex items-center justify-center z-50 modal-glass transition-all duration-200 invisible opacity-0">
-        <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl transform transition-all">
+        <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl">
             <div class="p-5 border-b border-slate-100">
                 <h3 class="text-lg font-semibold text-slate-800">Carregar relatório salvo</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Selecione um registro anterior para preencher o formulário</p>
+                <p class="text-xs text-slate-500 mt-0.5">Selecione um registro anterior para auto preenchimento</p>
             </div>
             <div class="p-4 max-h-96 overflow-y-auto" id="modalReportsList">
                 <div class="text-center py-6 text-slate-400 text-sm">buscando dados...</div>
@@ -192,33 +175,11 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push, get, child, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBdNPXscs1-ikMOLGCzL5igJDi989RRCCQ",
-            authDomain: "checklist-94b12.firebaseapp.com",
-            databaseURL: "https://checklist-94b12-default-rtdb.firebaseio.com",
-            projectId: "checklist-94b12",
-            storageBucket: "checklist-94b12.firebasestorage.app",
-            messagingSenderId: "471194751883",
-            appId: "1:471194751883:web:b3ea0cad2212d5e0c6d58e",
-            measurementId: "G-KJBZ2F3ZZE"
-        };
+    <script>
+        // ----- ARMAZENAMENTO TOTALMENTE LOCAL (FOTOS EM BLOB/LOCALSTORAGE) -----
+        // As fotos serão salvas como DataURL (base64) no localStorage junto com o relatório.
+        // Isso garante que não dependa do Firebase para imagens e os dados fiquem persistentes.
         
-        let app, db, storage, isFirebase = false;
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getDatabase(app);
-            storage = getStorage(app);
-            isFirebase = true;
-        } catch(e) { console.warn("Fallback localStorage", e); isFirebase = false; }
-        
-        const reportsRef = isFirebase ? ref(db, "relatorios") : null;
-        
-        // DOM inputs
         const tipoInp = document.getElementById('tipo');
         const redeInp = document.getElementById('rede');
         const idInp = document.getElementById('id');
@@ -234,7 +195,8 @@
         
         if (!dataInp.value) dataInp.value = new Date().toISOString().slice(0,10);
         
-        let photoUrls = new Array(6).fill(null);
+        let currentPhotoBlobs = new Array(6).fill(null); // armazena DataURL das fotos
+        
         const photosContainer = document.getElementById('photosContainer');
         
         function renderPhotos() {
@@ -242,9 +204,9 @@
             for (let i=0; i<6; i++) {
                 const div = document.createElement('div');
                 div.className = 'photo-slot w-full bg-cover bg-center relative flex items-center justify-center';
-                if (photoUrls[i]) div.style.backgroundImage = `url('${photoUrls[i]}')`;
+                if (currentPhotoBlobs[i]) div.style.backgroundImage = `url('${currentPhotoBlobs[i]}')`;
                 else div.style.backgroundColor = '#f1f5f9';
-                div.innerHTML = !photoUrls[i] ? `<span class="text-slate-300 text-2xl font-light">+</span>` : '';
+                div.innerHTML = !currentPhotoBlobs[i] ? `<span class="text-slate-300 text-2xl font-light">+</span>` : '';
                 const overlay = document.createElement('div');
                 overlay.className = 'absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-all rounded-xl flex items-center justify-center rounded-2xl';
                 overlay.innerHTML = '<span class="bg-black/60 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">alterar</span>';
@@ -254,111 +216,78 @@
             }
         }
         
-        async function pickImage(index) {
+        function pickImage(index) {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/jpeg,image/png,image/webp';
-            fileInput.onchange = async (e) => {
+            fileInput.onchange = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (isFirebase && storage) {
-                    try {
-                        const ext = file.name.split('.').pop();
-                        const fileName = `fotos/${Date.now()}_${index}.${ext}`;
-                        const imgRef = storageRef(storage, fileName);
-                        const snap = await uploadBytes(imgRef, file);
-                        const url = await getDownloadURL(snap.ref);
-                        photoUrls[index] = url;
-                        renderPhotos();
-                        showStatus(`Foto ${index+1} anexada`, 'green');
-                    } catch(err) { showStatus('Erro upload', 'red'); }
-                } else {
-                    const localUrl = URL.createObjectURL(file);
-                    photoUrls[index] = localUrl;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    currentPhotoBlobs[index] = ev.target.result; // DataURL
                     renderPhotos();
-                    showStatus('Foto local (demo)', 'blue');
-                }
+                    showStatus(`Foto ${index+1} anexada (local)`, 'green');
+                };
+                reader.readAsDataURL(file);
             };
             fileInput.click();
         }
         
         function showStatus(msg, type) {
             const el = document.getElementById('statusMsg');
-            el.innerHTML = `<span class="text-${type === 'green' ? 'emerald' : type === 'red' ? 'red' : 'slate'}-600 text-xs font-medium">${msg}</span>`;
+            const color = type === 'green' ? 'text-emerald-600' : (type === 'red' ? 'text-red-600' : 'text-slate-500');
+            el.innerHTML = `<span class="${color} text-xs font-medium">${msg}</span>`;
             setTimeout(() => { if(el) el.innerHTML = ''; }, 2800);
         }
         
-        // Salvar relatório (persiste no Firebase)
-        async function saveReport() {
+        // Salvar relatório no localStorage (incluindo fotos como base64)
+        function saveReport() {
             const report = {};
             for (const [k, inp] of Object.entries(inputs)) report[k] = inp.value.trim() || "";
-            report.fotos = photoUrls.filter(u => u !== null);
+            // fotos: armazenar apenas as que não são nulas
+            report.fotos = currentPhotoBlobs.filter(b => b !== null);
             report.timestamp = Date.now();
             report.createdAt = new Date().toISOString();
             
-            if (isFirebase && db) {
-                try {
-                    const newRef = push(reportsRef);
-                    await set(newRef, report);
-                    showStatus('Relatório salvo no Firebase ✅', 'green');
-                    loadHistoryAndModal();
-                } catch(e) { showStatus('Erro Firebase: ' + e.message, 'red'); }
-            } else {
-                let local = JSON.parse(localStorage.getItem("field_reports") || "[]");
-                local.unshift(report);
-                localStorage.setItem("field_reports", JSON.stringify(local.slice(0, 100)));
-                showStatus('Salvo localmente (offline)', 'blue');
+            let allReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
+            allReports.unshift(report);
+            // manter últimos 200 registros
+            if (allReports.length > 200) allReports = allReports.slice(0,200);
+            localStorage.setItem("field_reports", JSON.stringify(allReports));
+            showStatus('Relatório salvo com sucesso! (fotos inclusas)', 'green');
+            loadHistoryAndModal();
+        }
+        
+        // Excluir relatório por índice no array local
+        function deleteReportByIndex(index) {
+            let allReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
+            if (index >= 0 && index < allReports.length) {
+                allReports.splice(index, 1);
+                localStorage.setItem("field_reports", JSON.stringify(allReports));
+                showStatus('Registro excluído permanentemente', 'green');
                 loadHistoryAndModal();
-            }
-        }
-        
-        // Excluir relatório (LIXEIRA): precisa receber id ou ref
-        async function deleteReportById(reportId, isLocalKey = null) {
-            if (isFirebase && db && !isLocalKey) {
-                try {
-                    const reportRef = ref(db, `relatorios/${reportId}`);
-                    await remove(reportRef);
-                    showStatus('Registro removido permanentemente', 'green');
-                    loadHistoryAndModal();
-                } catch(e) { showStatus('Erro ao deletar', 'red'); }
+                // Se o formulário atual corresponder a algum dado, não limpamos automaticamente
             } else {
-                // modo localStorage
-                let localReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
-                const newReports = localReports.filter((_, idx) => idx !== isLocalKey);
-                localStorage.setItem("field_reports", JSON.stringify(newReports));
-                showStatus('Registro local excluído', 'blue');
-                loadHistoryAndModal();
+                showStatus('Erro ao excluir', 'red');
             }
         }
         
-        // Carrega histórico com botão lixeira em cada item
-        async function loadHistoryAndModal() {
-            if (isFirebase && db) {
-                const snapshot = await get(child(ref(db), "relatorios"));
-                const data = snapshot.val();
-                let reportsArray = [];
-                if (data) {
-                    reportsArray = Object.keys(data).map(key => ({ firebaseId: key, ...data[key] }));
-                    reportsArray.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-                }
-                renderHistoryList(reportsArray, true);
-                renderModalList(reportsArray);
-            } else {
-                const localReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
-                localReports.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-                renderHistoryList(localReports, false);
-                renderModalList(localReports);
-            }
+        function loadHistoryAndModal() {
+            const allReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
+            allReports.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+            renderHistoryList(allReports);
+            renderModalList(allReports);
         }
         
-        function renderHistoryList(reports, isFirebaseMode) {
+        function renderHistoryList(reports) {
             const container = document.getElementById('historyList');
             if (!reports.length) {
                 container.innerHTML = '<div class="text-center text-slate-400 text-sm py-6">Nenhum relatório salvo</div>';
                 return;
             }
             container.innerHTML = '';
-            reports.slice(0, 12).forEach((rep, idx) => {
+            reports.slice(0, 15).forEach((rep, idx) => {
                 const div = document.createElement('div');
                 div.className = 'badge-history p-3 border border-slate-100 rounded-xl cursor-pointer hover:shadow-sm transition-all flex justify-between items-center group';
                 const infoDiv = document.createElement('div');
@@ -372,15 +301,14 @@
                 trashBtn.className = 'opacity-0 group-hover:opacity-100 transition p-1 rounded-full hover:bg-red-50 ml-2';
                 trashBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (isFirebaseMode && rep.firebaseId) deleteReportById(rep.firebaseId, null);
-                    else if (!isFirebaseMode) deleteReportById(null, idx);
+                    deleteReportByIndex(idx);
                 });
                 div.appendChild(infoDiv);
                 div.appendChild(trashBtn);
                 div.addEventListener('click', (e) => {
                     if (e.target === trashBtn || trashBtn.contains(e.target)) return;
                     fillFormWithReport(rep);
-                    showStatus('Dados carregados', 'green');
+                    showStatus('Dados carregados com sucesso', 'green');
                     closeModal();
                 });
                 container.appendChild(div);
@@ -412,35 +340,84 @@
                 else if (key === 'coordenador' && !report.coordenador) inputs.coordenador.value = "Anderson Duarte";
                 else inputs[key].value = "";
             }
+            // restaurar fotos (base64)
             if (report.fotos && Array.isArray(report.fotos)) {
-                for (let i=0; i<6; i++) photoUrls[i] = (i < report.fotos.length && report.fotos[i]) ? report.fotos[i] : null;
-            } else { photoUrls.fill(null); }
+                for (let i=0; i<6; i++) {
+                    currentPhotoBlobs[i] = (i < report.fotos.length && report.fotos[i]) ? report.fotos[i] : null;
+                }
+            } else {
+                currentPhotoBlobs.fill(null);
+            }
             renderPhotos();
             if (!inputs.data.value) inputs.data.value = new Date().toISOString().slice(0,10);
         }
         
-        // WhatsApp: envia legenda + orientação para fotos separadas
-        function shareWhats() {
+        // COMPARTILHAR WHATSAPP: texto da legenda + fotos separadas (uma por vez)
+        async function shareWhatsAppWithPhotos() {
+            // coletar dados do formulário
             const fields = {};
             for (const [k, inp] of Object.entries(inputs)) fields[k] = inp.value.trim() || "—";
-            let msg = `📊 *RELATÓRIO DE CAMPO*\n`;
-            msg += `▪️ Tipo: ${fields.tipo}\n▪️ Rede: ${fields.rede}\n▪️ ID: ${fields.id}\n▪️ Filial: ${fields.filial}\n▪️ Cidade: ${fields.cidade}\n▪️ Produto: ${fields.produto}\n▪️ Coordenador: ${fields.coordenador}\n▪️ Consultor: ${fields.consultor}\n▪️ Regional: ${fields.regional}\n▪️ Data: ${fields.data}\n\n📸 *Fotos anexadas:* ${photoUrls.filter(u=>u).length} imagem(ns) - Enviar separadamente pelo WhatsApp.`;
-            const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-            window.open(url, '_blank');
-            if (photoUrls.some(u=>u)) setTimeout(() => { showStatus('Lembrete: compartilhe as imagens manualmente', 'blue'); }, 800);
-            else showStatus('Mensagem enviada', 'green');
+            
+            // Montar legenda principal
+            let caption = `📊 *RELATÓRIO DE CAMPO*\n`;
+            caption += `▪️ Tipo: ${fields.tipo}\n▪️ Rede: ${fields.rede}\n▪️ ID: ${fields.id}\n▪️ Filial: ${fields.filial}\n▪️ Cidade: ${fields.cidade}\n▪️ Produto: ${fields.produto}\n▪️ Coordenador: ${fields.coordenador}\n▪️ Consultor(a): ${fields.consultor}\n▪️ Regional: ${fields.regional}\n▪️ Data: ${fields.data}\n\n`;
+            const fotosExistentes = currentPhotoBlobs.filter(b => b !== null);
+            if (fotosExistentes.length > 0) {
+                caption += `📸 *Este relatório contém ${fotosExistentes.length} foto(s).* As imagens serão enviadas em seguida (separadamente).`;
+            } else {
+                caption += `📸 Nenhuma foto anexada.`;
+            }
+            
+            // Enviar primeiro a legenda via WhatsApp
+            const encodedCaption = encodeURIComponent(caption);
+            const whatsappUrl = `https://wa.me/?text=${encodedCaption}`;
+            window.open(whatsappUrl, '_blank');
+            
+            // Após 1 segundo, abrir as fotos uma por uma para o usuário enviar manualmente
+            if (fotosExistentes.length > 0) {
+                setTimeout(() => {
+                    let photoIndex = 0;
+                    function sendNextPhoto() {
+                        if (photoIndex >= fotosExistentes.length) {
+                            showStatus('Todas as fotos foram abertas! Envie cada uma no WhatsApp.', 'green');
+                            return;
+                        }
+                        // Criar um link dataURL para cada foto (download indireto)
+                        const photoDataUrl = fotosExistentes[photoIndex];
+                        // Abrir em nova aba para o usuário copiar/enviar
+                        const win = window.open();
+                        win.document.write(`
+                            <html><head><title>Foto ${photoIndex+1}</title><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+                            <body style="display:flex; justify-content:center; align-items:center; background:#111; margin:0; padding:20px;">
+                                <div style="max-width:100%; text-align:center;">
+                                    <img src="${photoDataUrl}" style="max-width:100%; max-height:80vh; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.3);" />
+                                    <p style="color:white; font-family:sans-serif; margin-top:16px;">📱 Clique com botão direito e "Salvar imagem" ou compartilhe direto no WhatsApp</p>
+                                    <p style="color:#aaa; font-size:12px;">Foto ${photoIndex+1} de ${fotosExistentes.length}</p>
+                                </div>
+                            </body>
+                            </html>
+                        `);
+                        photoIndex++;
+                        // Pequeno delay para não flood
+                        setTimeout(sendNextPhoto, 800);
+                    }
+                    sendNextPhoto();
+                }, 1200);
+            } else {
+                showStatus('Legenda enviada! Sem fotos anexadas.', 'blue');
+            }
         }
         
         function clearFormOnly() {
             for (let k of Object.keys(inputs)) inputs[k].value = '';
             inputs.coordenador.value = "Anderson Duarte";
             inputs.data.value = new Date().toISOString().slice(0,10);
-            photoUrls.fill(null);
+            currentPhotoBlobs.fill(null);
             renderPhotos();
-            showStatus('Formulário limpo', 'blue');
+            showStatus('Formulário limpo (dados não afetam histórico)', 'blue');
         }
         
-        // Modal
+        // Modal controls
         const modal = document.getElementById('autoModal');
         const openBtn = document.getElementById('openModalBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -451,23 +428,11 @@
         modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
         
         document.getElementById('saveReportBtn').addEventListener('click', saveReport);
-        document.getElementById('shareWhatsBtn').addEventListener('click', shareWhats);
-        document.getElementById('clearFormBtn')?.addEventListener('click', clearFormOnly);
-        // O botão "Apagar selecionado" pede para apagar o último item? Melhor: apagar item em destaque no histórico? Mas adicionamos lixeira por item. 
-        // O botão deleteHistoryBtn pode ser usado para apagar o registro atualmente carregado no formulário? Vamos implementar: apaga o relatório que está preenchido (se tiver ID) 
-        // Para simplicidade, vamos manter lixeira por item no histórico. Mas o botão extra "Apagar selecionado" pode remover o registro que está no formulário caso ele exista na base.
-        // Implementar remoção do registro atual (baseado no campo ID?).
-        const delBtn = document.getElementById('deleteHistoryBtn');
-        if(delBtn) {
-            delBtn.addEventListener('click', async () => {
-                // Apaga último registro carregado? Não confiável. Melhor alerta: usuário deve usar lixeira no histórico.
-                showStatus('Clique no ícone de lixeira ao lado do relatório desejado', 'blue');
-            });
-        }
+        document.getElementById('shareWhatsBtn').addEventListener('click', shareWhatsAppWithPhotos);
+        document.getElementById('clearFormBtn').addEventListener('click', clearFormOnly);
         
         renderPhotos();
         loadHistoryAndModal();
-        // Ativar autocomplete visual: não removemos dados do Firebase. OK.
     </script>
 </body>
 </html>
