@@ -2,894 +2,519 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="TaskFlow - Agenda Colaborativa com Dark Mode, PWA, Comentários e muito mais">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="TaskFlow">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Cpath d='M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'/%3E%3C/svg%3E">
-    <title>TaskFlow - Agenda Colaborativa</title>
-    
-    <!-- Tailwind CSS com Dark Mode -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Field Report System | Coleta Inteligente</title>
+    <!-- TailwindCSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: {} }
-        }
-    </script>
-    
-    <!-- Firebase Modular SDK v10+ -->
+    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, where, orderBy, limit, onSnapshot, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        import { getDatabase, ref, set, onValue, push, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
         
-        window.firebaseModules = {
-            initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut,
-            getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, where, orderBy, limit, onSnapshot, writeBatch, enableIndexedDbPersistence,
-            getStorage, ref, uploadBytes, getDownloadURL
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdNPXscs1-ikMOLGCzL5igJDi989RRCCQ",
+            authDomain: "checklist-94b12.firebaseapp.com",
+            databaseURL: "https://checklist-94b12-default-rtdb.firebaseio.com",
+            projectId: "checklist-94b12",
+            storageBucket: "checklist-94b12.firebasestorage.app",
+            messagingSenderId: "471194751883",
+            appId: "1:471194751883:web:b3ea0cad2212d5e0c6d58e",
+            measurementId: "G-KJBZ2F3ZZE"
         };
+        
+        let db, storage, app;
+        let firebaseReady = false;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            storage = getStorage(app);
+            firebaseReady = true;
+            console.log("Firebase connected successfully");
+        } catch (e) {
+            console.warn("Firebase connection failed, using localStorage fallback", e);
+            firebaseReady = false;
+        }
+        
+        window.firebaseAPI = { db, storage, firebaseReady, ref, set, onValue, push, update, get, storageRef, uploadBytes, getDownloadURL };
     </script>
-    
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- SortableJS para Drag & Drop -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        
-        /* Dark Mode Transitions */
-        html { transition: background-color 0.3s ease, color 0.2s ease; }
-        
-        /* Skeleton Loading */
-        .skeleton { background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
-        .dark .skeleton { background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%); background-size: 200% 100%; }
-        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-        
-        .task-card { transition: all 0.2s ease; cursor: pointer; }
-        .task-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px -6px rgba(0,0,0,0.15); }
-        .dark .task-card { box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-track { background: #2a2a2a; }
-        .dark ::-webkit-scrollbar-thumb { background: #555; }
-        
-        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; background-color: #e0e7ff; }
-        .dark .tab-btn.active { background-color: #3730a3; color: #a5b4fc; border-bottom-color: #818cf8; }
-        .tab-content { display: none; animation: fadeIn 0.3s; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
-        
-        .comment-bubble { background: #f3f4f6; border-radius: 18px; padding: 10px 14px; margin-bottom: 10px; }
-        .dark .comment-bubble { background: #374151; }
-        .comment-bubble:hover { background: #e5e7eb; }
-        .dark .comment-bubble:hover { background: #4b5563; }
-        
-        .sortable-drag { opacity: 0.5; background: #e0e7ff; }
+        .photo-card {
+            aspect-ratio: 1 / 1;
+            background-size: cover;
+            background-position: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .photo-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .modal-transition {
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        input, select, textarea {
+            transition: all 0.15s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            ring: 2px solid #3b82f6;
+        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen pb-20 sm:pb-0 transition-colors">
-    
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center transition-opacity">
-        <div class="text-center">
-            <i class="fas fa-tasks text-6xl text-indigo-600 dark:text-indigo-400 animate-bounce"></i>
-            <p class="mt-4 text-gray-600 dark:text-gray-400 font-medium">Carregando TaskFlow...</p>
-        </div>
-    </div>
+<body class="bg-slate-50 font-sans antialiased">
 
-    <!-- Login Container -->
-    <div id="loginContainer" class="min-h-screen flex items-center justify-center px-4 hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full transition-colors">
-            <div class="text-center mb-8">
-                <div class="bg-indigo-100 dark:bg-indigo-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-tasks text-4xl text-indigo-600 dark:text-indigo-400"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">TaskFlow</h1>
-                <p class="text-gray-500 dark:text-gray-400 mt-2">Sua área de trabalho organizada.</p>
-            </div>
-            <button onclick="signInWithGoogle()" class="w-full bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3">
-                <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
-                Entrar com Google
-            </button>
-        </div>
-    </div>
-
-    <!-- Main App Container -->
-    <div id="appContainer" class="hidden flex flex-col min-h-screen">
-        
-        <!-- Header -->
-        <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 transition-colors">
-            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 text-white w-8 h-8 rounded flex items-center justify-center">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h1 class="text-xl font-bold text-gray-800 dark:text-white hidden sm:block">TaskFlow</h1>
-                </div>
-                
-                <div class="flex items-center gap-3">
-                    <!-- Dark Mode Toggle -->
-                    <button onclick="toggleDarkMode()" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition p-2">
-                        <i id="darkModeIcon" class="fas fa-moon text-lg"></i>
-                    </button>
-                    
-                    <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-full px-3 py-1.5">
-                        <img id="userAvatar" src="" class="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 hidden">
-                        <i id="userIconFallback" class="fas fa-user-circle text-gray-500 dark:text-gray-400 text-xl"></i>
-                        <span id="userName" class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[100px] sm:max-w-[150px]"></span>
-                    </div>
-                    <button onclick="logout()" class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition p-2" title="Sair">
-                        <i class="fas fa-sign-out-alt text-lg"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="container mx-auto px-2">
-                <div class="flex overflow-x-auto">
-                    <button onclick="switchTab('tasks')" id="btn-tab-tasks" class="tab-btn active flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 border-transparent transition-colors whitespace-nowrap">
-                        <i class="fas fa-list-check"></i> Tarefas
-                    </button>
-                    <button onclick="switchTab('files')" id="btn-tab-files" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-b-2 border-transparent transition-colors whitespace-nowrap">
-                        <i class="fas fa-folder-open"></i> Arquivos
-                    </button>
-                    <button onclick="switchTab('team')" id="btn-tab-team" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-b-2 border-transparent transition-colors whitespace-nowrap">
-                        <i class="fas fa-users"></i> Equipe
-                    </button>
-                </div>
-            </div>
+    <div class="container mx-auto px-4 py-5 max-w-5xl">
+        <!-- Header Clean -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold text-slate-800 tracking-tight">Field Report System</h1>
+            <p class="text-slate-500 text-sm mt-0.5">Coleta de dados sincronizada em tempo real</p>
         </div>
 
-        <!-- Main Content -->
-        <div class="container mx-auto px-4 py-6 flex-1 max-w-4xl relative">
-            
-            <!-- Tarefas Tab -->
-            <div id="tab-tasks" class="tab-content active">
-                <!-- Barra de Busca e Filtros -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <div class="flex-1 relative">
-                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" id="searchInput" placeholder="Buscar tarefas..." class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <select id="filterPriority" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <option value="all">Todas prioridades</option>
-                            <option value="alta">🔴 Alta</option>
-                            <option value="media">🟡 Média</option>
-                            <option value="baixa">🟢 Baixa</option>
-                        </select>
-                        <button onclick="clearFilters()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
-                            <i class="fas fa-times"></i> Limpar
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Date Picker -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-2 mb-4 flex items-center justify-center gap-2 max-w-xs mx-auto">
-                    <button onclick="changeDate(-1)" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"><i class="fas fa-chevron-left"></i></button>
-                    <input type="date" id="datePicker" class="bg-transparent border-none text-sm font-bold text-gray-700 dark:text-gray-300 focus:ring-0 outline-none text-center cursor-pointer">
-                    <button onclick="changeDate(1)" class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"><i class="fas fa-chevron-right"></i></button>
-                </div>
-
-                <!-- Tasks List com Skeleton -->
-                <div id="tasksList" class="space-y-2.5 pb-24">
-                    <div class="skeleton h-24 w-full"></div>
-                    <div class="skeleton h-24 w-full"></div>
-                    <div class="skeleton h-24 w-full"></div>
-                </div>
-            </div>
-
-            <!-- Arquivos Tab -->
-            <div id="tab-files" class="tab-content">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-gray-100 dark:border-gray-700 pb-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">Cofre de Arquivos</h2>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Documentos compartilhados com a equipe.</p>
-                        </div>
-                        <button onclick="document.getElementById('fileInput').click()" class="w-full sm:w-auto bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 px-4 py-2 rounded-lg text-sm transition font-medium flex items-center justify-center gap-2">
-                            <i class="fas fa-cloud-upload-alt"></i> Fazer Upload
-                        </button>
-                        <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
-                    </div>
-                    <div id="filesList" class="space-y-3"></div>
-                </div>
-            </div>
-
-            <!-- Equipe Tab -->
-            <div id="tab-team" class="tab-content pb-20">
-                <div class="space-y-6">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-                        <div class="mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
-                            <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-circle text-green-500 text-xs"></i> Online Agora
-                            </h2>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Quem está com o TaskFlow aberto neste momento.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2" id="activeUsersList"></div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-                        <div class="mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
-                            <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-address-book text-indigo-500"></i> Permissões de Acesso
-                            </h2>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Dê acesso total aos usuários cadastrados para não precisar convidá-los por tarefa.</p>
-                        </div>
-                        <div class="space-y-3" id="allUsersList"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- FAB Button -->
-        <button id="fabAddTask" onclick="showAddTaskModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center text-2xl transition-transform transform hover:scale-105 z-40 active:scale-95">
-            <i class="fas fa-plus"></i>
-        </button>
-    </div>
-
-    <!-- Modal de Criar/Editar Tarefa -->
-    <div id="taskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto transition-colors">
-            <div class="flex justify-between items-center mb-5">
-                <h3 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-white">Criar Nova Tarefa</h3>
-                <button onclick="closeModal('taskModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-lg"></i>
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-base font-medium text-slate-700">Novo registro</h2>
+                <button id="openModalBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">
+                    Carregar automático
                 </button>
             </div>
             
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-1">Título</label>
-                    <input type="text" id="taskTitle" placeholder="Ex: Revisar relatório financeiro" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                </div>
-                
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-1">Descrição</label>
-                    <textarea id="taskDesc" placeholder="Detalhes da tarefa..." rows="3" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition resize-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3">
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-1">Prioridade</label>
-                        <select id="taskPriority" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 focus:border-indigo-500 outline-none transition bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm">
-                            <option value="alta">🔴 Alta</option>
-                            <option value="media" selected>🟡 Média</option>
-                            <option value="baixa">🟢 Baixa</option>
-                        </select>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Tipo</label>
+                        <input type="text" id="tipo" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: Exposição e Abordagem">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-1">Convite (Opcional)</label>
-                        <input type="email" id="inviteEmail" placeholder="email@ex.com" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 focus:border-indigo-500 outline-none transition text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Rede</label>
+                        <input type="text" id="rede" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: Zema">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">ID</label>
+                        <input type="text" id="id" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: 149265">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Filial</label>
+                        <input type="text" id="filial" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: Lagoa Santa">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Cidade</label>
+                        <input type="text" id="cidade" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: Lagoa Santa - MG">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Produto</label>
+                        <input type="text" id="produto" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: F190B1W">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Coordenador</label>
+                        <input type="text" id="coordenador" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" value="Anderson Duarte">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Consultor(a)</label>
+                        <input type="text" id="consultor" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: Aline Reis">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Regional</label>
+                        <input type="text" id="regional" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500" placeholder="Ex: SPC">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide">Data</label>
+                        <input type="date" id="data" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
                     </div>
                 </div>
-            </div>
 
-            <div class="mt-8">
-                <button id="saveTaskBtn" onclick="handleSaveTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg transition font-semibold shadow-md flex justify-center items-center gap-2">
-                    <i class="fas fa-check"></i> Salvar Tarefa
-                </button>
+                <!-- Photo Section -->
+                <div class="mt-8">
+                    <label class="block text-xs font-medium text-slate-600 uppercase tracking-wide mb-3">Fotos (máximo 6)</label>
+                    <div id="photosContainer" class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                        <!-- 6 photo slots -->
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Clique em qualquer quadro para adicionar ou substituir imagem</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 mt-8 pt-2">
+                    <button id="saveReportBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">Salvar relatório</button>
+                    <button id="shareWhatsBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">Compartilhar WhatsApp</button>
+                    <button id="clearFormBtn" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-2 rounded-md text-sm font-medium transition-colors">Limpar formulário</button>
+                </div>
+                <div id="statusMsg" class="mt-3 text-sm text-center text-slate-500"></div>
+            </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h3 class="text-sm font-medium text-slate-700">Últimos registros</h3>
+            </div>
+            <div class="p-4 max-h-64 overflow-y-auto">
+                <div id="historyList" class="space-y-2">
+                    <p class="text-slate-400 text-sm text-center py-4">Nenhum relatório salvo</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Visualização -->
-    <div id="viewModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col transition-colors">
-            <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-700">
-                <h3 id="viewTaskTitle" class="text-xl font-bold text-gray-800 dark:text-white">Carregando...</h3>
-                <button onclick="closeModal('viewModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+    <!-- Modal for Auto Complete -->
+    <div id="autoModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 modal-transition invisible opacity-0">
+        <div class="bg-white rounded-xl w-full max-w-lg mx-4 shadow-xl">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h3 class="text-lg font-medium text-slate-800">Preenchimento automático</h3>
+                <p class="text-sm text-slate-500 mt-0.5">Selecione um relatório salvo para carregar todos os dados</p>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-5 space-y-5">
-                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
-                    <p class="text-sm text-gray-500 dark:text-gray-400 font-semibold mb-1">Descrição</p>
-                    <p id="viewTaskDesc" class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap"></p>
-                </div>
-                
-                <div class="flex flex-wrap gap-4 text-sm">
-                    <span class="bg-indigo-50 dark:bg-indigo-900/50 px-3 py-1 rounded-full"><i class="fas fa-flag"></i> Prioridade: <strong id="viewPriority"></strong></span>
-                    <span><i class="fas fa-calendar-alt"></i> Data: <strong id="viewDate"></strong></span>
-                    <span><i class="fas fa-user"></i> Criado por: <strong id="viewCreatedBy"></strong></span>
-                    <span id="assignedSpan"><i class="fas fa-envelope"></i> Atribuído: <strong id="viewAssignedTo"></strong></span>
-                    <span id="completedSpan" class="hidden"><i class="fas fa-check-circle text-green-600"></i> <strong class="text-green-600">Concluída</strong></span>
-                </div>
-                
-                <!-- Comentários -->
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-comments text-indigo-500 mr-2"></i>Comentários</h4>
-                        <span id="commentsCount" class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">0</span>
-                    </div>
-                    <div id="commentsList" class="space-y-2 mb-3 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl"></div>
-                    <div class="flex gap-2">
-                        <input type="text" id="newCommentInput" placeholder="Escreva um comentário..." class="flex-1 border border-gray-300 dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                        <button onclick="addCommentToCurrentTask()" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm hover:bg-indigo-700 transition">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
+            <div class="p-5 max-h-96 overflow-y-auto">
+                <div id="modalReportsList" class="space-y-3">
+                    <div class="text-center text-slate-400 py-4">Carregando relatórios...</div>
                 </div>
             </div>
-            
-            <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-b-2xl">
-                <button onclick="openEditFromView()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-semibold transition">
-                    <i class="fas fa-edit mr-1"></i> Editar
-                </button>
-                <button onclick="confirmDeleteTask()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold transition">
-                    <i class="fas fa-trash-alt mr-1"></i> Excluir
-                </button>
-                <button onclick="closeModal('viewModal')" class="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 rounded-lg font-semibold transition">
-                    Fechar
-                </button>
+            <div class="px-6 py-4 border-t border-slate-100 flex justify-end">
+                <button id="closeModalBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-1.5 rounded-md text-sm transition-colors">Fechar</button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // ============ FIREBASE MODULAR INIT ============
-        const { initializeApp } = window.firebaseModules;
-        const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } = window.firebaseModules;
-        const { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, where, orderBy, limit, onSnapshot, writeBatch, enableIndexedDbPersistence } = window.firebaseModules;
-        const { getStorage, ref, uploadBytes, getDownloadURL } = window.firebaseModules;
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
         
+        // Firebase Config (Real)
         const firebaseConfig = {
-            apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
-            authDomain: "marketplaceconnect-af26d.firebaseapp.com",
-            databaseURL: "https://marketplaceconnect-af26d-default-rtdb.firebaseio.com",
-            projectId: "marketplaceconnect-af26d",
-            storageBucket: "marketplaceconnect-af26d.firebasestorage.app",
-            messagingSenderId: "768552546759",
-            appId: "1:768552546759:web:4367fc4a161ecf90c469e2"
+            apiKey: "AIzaSyBdNPXscs1-ikMOLGCzL5igJDi989RRCCQ",
+            authDomain: "checklist-94b12.firebaseapp.com",
+            databaseURL: "https://checklist-94b12-default-rtdb.firebaseio.com",
+            projectId: "checklist-94b12",
+            storageBucket: "checklist-94b12.firebasestorage.app",
+            messagingSenderId: "471194751883",
+            appId: "1:471194751883:web:b3ea0cad2212d5e0c6d58e",
+            measurementId: "G-KJBZ2F3ZZE"
         };
         
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        
-        // Habilitar Offline Persistence
-        enableIndexedDbPersistence(db).catch((err) => {
-            if (err.code === 'failed-precondition') console.warn('Múltiplas abas abertas');
-            else if (err.code === 'unimplemented') console.warn('Navegador não suporta');
-        });
-        
-        // Variáveis Globais
-        let currentUser = null;
-        let currentViewTaskId = null;
-        let currentEditTaskId = null;
-        let currentCommentsUnsubscribe = null;
-        let tasksData = [];
-        let sortableInstance = null;
-        
-        // Dark Mode
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.documentElement.classList.add('dark');
-            document.getElementById('darkModeIcon')?.classList.replace('fa-moon', 'fa-sun');
+        let db, storage, isFirebaseReal = false;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            storage = getStorage(app);
+            isFirebaseReal = true;
+            console.log("Firebase realtime database connected");
+        } catch (error) {
+            console.warn("LocalStorage fallback mode", error);
+            isFirebaseReal = false;
         }
         
-        window.toggleDarkMode = () => {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark);
-            const icon = document.getElementById('darkModeIcon');
-            if (icon) icon.classList.replace(isDark ? 'fa-moon' : 'fa-sun', isDark ? 'fa-sun' : 'fa-moon');
+        const reportsRef = isFirebaseReal ? ref(db, "relatorios") : null;
+        
+        // DOM Inputs
+        const inputs = {
+            tipo: document.getElementById('tipo'),
+            rede: document.getElementById('rede'),
+            id: document.getElementById('id'),
+            filial: document.getElementById('filial'),
+            cidade: document.getElementById('cidade'),
+            produto: document.getElementById('produto'),
+            coordenador: document.getElementById('coordenador'),
+            consultor: document.getElementById('consultor'),
+            regional: document.getElementById('regional'),
+            data: document.getElementById('data')
         };
         
-        // Utilitários
-        function getLocalISODate(d) {
-            const date = new Date(d);
-            const offset = date.getTimezoneOffset();
-            const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-            return localDate.toISOString().split('T')[0];
+        // Set today's date if empty
+        if (!inputs.data.value) {
+            inputs.data.value = new Date().toISOString().slice(0,10);
         }
         
-        let currentDate = getLocalISODate(new Date());
+        // Photos management
+        let photoUrls = new Array(6).fill(null);
+        const photosContainer = document.getElementById('photosContainer');
         
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function renderPhotoGrid() {
+            photosContainer.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const card = document.createElement('div');
+                card.className = 'photo-card bg-slate-100 rounded-md border border-slate-200 overflow-hidden relative';
+                card.style.backgroundImage = photoUrls[i] ? `url('${photoUrls[i]}')` : 'none';
+                card.style.backgroundColor = photoUrls[i] ? 'transparent' : '#f1f5f9';
+                card.innerHTML = `
+                    <div class="w-full h-full flex items-center justify-center">
+                        ${!photoUrls[i] ? '<span class="text-slate-300 text-2xl">+</span>' : ''}
+                    </div>
+                    <div class="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition flex items-center justify-center">
+                        <span class="text-white text-xs font-medium bg-black/60 px-2 py-1 rounded">${photoUrls[i] ? 'Trocar' : 'Adicionar'}</span>
+                    </div>
+                `;
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openFilePicker(i);
+                });
+                photosContainer.appendChild(card);
+            }
         }
         
-        async function showToast(type, title, message) {
-            const icons = { success: 'success', error: 'error', warning: 'warning', info: 'info' };
-            await Swal.fire({ icon: icons[type] || 'info', title: title, text: message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        function openFilePicker(index) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/jpeg,image/png,image/webp';
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (isFirebaseReal && storage) {
+                    try {
+                        const fileName = `fotos/${Date.now()}_${index}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                        const imageRef = storageRef(storage, fileName);
+                        const snapshot = await uploadBytes(imageRef, file);
+                        const downloadUrl = await getDownloadURL(snapshot.ref);
+                        photoUrls[index] = downloadUrl;
+                        renderPhotoGrid();
+                        showStatus(`Foto ${index+1} enviada com sucesso`, 'green');
+                    } catch (err) {
+                        console.error(err);
+                        showStatus('Erro no envio da foto: ' + err.message, 'red');
+                    }
+                } else {
+                    const localUrl = URL.createObjectURL(file);
+                    photoUrls[index] = localUrl;
+                    renderPhotoGrid();
+                    showStatus('Foto adicionada (modo local)', 'blue');
+                }
+            };
+            fileInput.click();
         }
         
-        // Notificação simplificada
-        async function showNotification(msg, type) {
-            await showToast(type, type === 'error' ? 'Erro!' : 'Sucesso!', msg);
-        }
-        
-        // ============ FUNÇÕES PRINCIPAIS ============
-        window.switchTab = (tabId) => {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => {
-                el.classList.remove('active', 'text-indigo-600', 'border-indigo-600', 'bg-indigo-50');
-                el.classList.add('text-gray-500', 'border-transparent');
-            });
-            document.getElementById(`tab-${tabId}`).classList.add('active');
-            const btn = document.getElementById(`btn-tab-${tabId}`);
-            btn.classList.add('active', 'text-indigo-600', 'border-indigo-600');
-            if (window.innerWidth < 640) btn.classList.add('bg-indigo-50');
-            const fab = document.getElementById('fabAddTask');
-            if (tabId === 'tasks') fab.classList.remove('hidden');
-            else fab.classList.add('hidden');
-        };
-        
-        async function initializeUser() {
-            try {
-                const userRef = doc(db, 'users', currentUser.uid);
-                await updateDoc(userRef, {
-                    email: currentUser.email,
-                    name: currentUser.displayName || currentUser.email.split('@')[0],
-                    photoURL: currentUser.photoURL || '',
-                    lastActive: new Date(),
-                    online: true
-                }).catch(() => setDoc(userRef, { email: currentUser.email, name: currentUser.displayName || currentUser.email.split('@')[0], photoURL: currentUser.photoURL || '', lastActive: new Date(), online: true }));
-            } catch (error) { console.error("Erro ao iniciar user:", error); }
-        }
-        
-        function setupActiveStatus() {
-            const userRef = doc(db, 'users', currentUser.uid);
-            const updateStatus = () => { updateDoc(userRef, { lastActive: new Date(), online: true }).catch(() => {}); };
-            updateStatus();
-            setInterval(updateStatus, 30000);
-            window.addEventListener('beforeunload', () => { updateDoc(userRef, { online: false }); });
-        }
-        
-        function setupRealtimeListeners() {
-            const qActive = query(collection(db, 'users'), where('online', '==', true));
-            onSnapshot(qActive, (snapshot) => {
-                const activeUsers = [];
-                snapshot.forEach(doc => { if (doc.id !== currentUser.uid) activeUsers.push(doc.data()); });
-                displayActiveUsers(activeUsers);
-            });
+        async function saveReport() {
+            const reportData = {};
+            for (const [key, el] of Object.entries(inputs)) {
+                reportData[key] = el.value.trim() || "";
+            }
+            reportData.fotos = photoUrls.filter(url => url !== null);
+            reportData.timestamp = Date.now();
+            reportData.createdAt = new Date().toISOString();
             
-            onSnapshot(collection(db, 'users'), (snapshot) => {
-                const allUsers = [];
-                snapshot.forEach(doc => { allUsers.push({ id: doc.id, ...doc.data() }); });
-                displayAllUsers(allUsers);
-            });
+            if (isFirebaseReal && db) {
+                try {
+                    const newReportRef = push(reportsRef);
+                    await set(newReportRef, reportData);
+                    showStatus('Relatório salvo no Firebase', 'green');
+                    loadReportsHistory();
+                    loadModalReports();
+                } catch (err) {
+                    console.error(err);
+                    showStatus('Erro ao salvar: ' + err.message, 'red');
+                }
+            } else {
+                let localReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
+                localReports.unshift(reportData);
+                localStorage.setItem("field_reports", JSON.stringify(localReports.slice(0, 50)));
+                showStatus('Salvo localmente (Firebase offline)', 'blue');
+                loadReportsHistory();
+                loadModalReports();
+            }
         }
         
-        async function loadTasks() {
-            try {
-                const q = query(collection(db, 'tasks'), where('date', '==', currentDate));
-                const querySnapshot = await getDocs(q);
-                tasksData = [];
-                querySnapshot.forEach(doc => { tasksData.push({ id: doc.id, ...doc.data() }); });
-                tasksData.sort((a, b) => (b.priorityValue || 0) - (a.priorityValue || 0));
-                displayTasks(tasksData);
-                
-                // Inicializar Drag & Drop
-                if (sortableInstance) sortableInstance.destroy();
-                const container = document.getElementById('tasksList');
-                sortableInstance = new Sortable(container, {
-                    animation: 200,
-                    handle: '.task-card',
-                    ghostClass: 'sortable-drag',
-                    onEnd: async (evt) => {
-                        const newOrder = [...tasksData];
-                        const [movedItem] = newOrder.splice(evt.oldIndex, 1);
-                        newOrder.splice(evt.newIndex, 0, movedItem);
-                        tasksData = newOrder;
+        function loadReportsHistory() {
+            if (isFirebaseReal && db) {
+                onValue(reportsRef, (snapshot) => {
+                    const data = snapshot.val();
+                    const reportsArray = [];
+                    if (data) {
+                        Object.keys(data).forEach(key => {
+                            reportsArray.push({ id: key, ...data[key] });
+                        });
+                        reportsArray.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+                        renderHistoryList(reportsArray.slice(0, 10));
+                        renderModalReportsList(reportsArray);
+                    } else {
+                        renderHistoryList([]);
+                        renderModalReportsList([]);
                     }
                 });
-            } catch (error) { console.error("Erro ao carregar tarefas:", error); }
+            } else {
+                const localReports = JSON.parse(localStorage.getItem("field_reports") || "[]");
+                localReports.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+                renderHistoryList(localReports.slice(0, 10));
+                renderModalReportsList(localReports);
+            }
         }
         
-        function filterTasks() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const priorityFilter = document.getElementById('filterPriority').value;
-            let filtered = [...tasksData];
-            if (searchTerm) filtered = filtered.filter(t => t.title?.toLowerCase().includes(searchTerm) || t.description?.toLowerCase().includes(searchTerm));
-            if (priorityFilter !== 'all') filtered = filtered.filter(t => t.priority === priorityFilter);
-            displayTasks(filtered);
-        }
-        
-        window.clearFilters = () => {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('filterPriority').value = 'all';
-            displayTasks(tasksData);
-        };
-        
-        function displayTasks(tasks) {
-            const container = document.getElementById('tasksList');
-            if (tasks.length === 0) {
-                container.innerHTML = `<div class="text-center bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-12 px-4">
-                    <div class="bg-gray-50 dark:bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <i class="fas fa-mug-hot text-2xl text-gray-400 dark:text-gray-500"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Nenhuma tarefa hoje</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sua agenda está livre!</p>
-                </div>`;
+        function renderHistoryList(reports) {
+            const container = document.getElementById('historyList');
+            if (!reports.length) {
+                container.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nenhum relatório salvo</p>';
                 return;
             }
-            
-            container.innerHTML = tasks.map(task => `
-                <div class="task-card bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 shadow-sm border-l-4 ${getPriorityColor(task.priority)}" onclick="openViewModal('${task.id}')">
-                    <div class="flex items-start justify-between gap-2 w-full">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm sm:text-base leading-tight truncate">${escapeHtml(task.title)}</h4>
-                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${getPriorityBadge(task.priority)}">${task.priority}</span>
-                                ${task.completed ? '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"><i class="fas fa-check"></i> Concluída</span>' : ''}
-                            </div>
-                            ${task.description ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${escapeHtml(task.description)}</p>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-2 mt-1 gap-2">
-                        <div class="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                            <span><i class="fas fa-user mr-1"></i>${escapeHtml((task.createdBy || '?').split(' ')[0])}</span>
-                            ${task.assignedTo ? `<span class="text-blue-500"><i class="fas fa-at"></i> ${escapeHtml(task.assignedTo)}</span>` : ''}
-                        </div>
-                        <div class="flex items-center gap-2 self-end sm:self-auto" onclick="event.stopPropagation()">
-                            ${!task.completed ? `
-                                <button onclick="startTask('${task.id}')" class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition"><i class="fas fa-play text-[10px]"></i> Iniciar</button>
-                                <button onclick="completeTask('${task.id}')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 shadow-sm transition"><i class="fas fa-check text-[10px]"></i> Fechar</button>
-                            ` : `<span class="text-green-600 dark:text-green-400 text-xs font-bold flex items-center gap-1"><i class="fas fa-check-double"></i> Concluído</span>`}
-                        </div>
-                    </div>
+            container.innerHTML = reports.map(r => `
+                <div class="bg-slate-50 p-3 rounded-md border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors" data-report='${JSON.stringify(r)}'>
+                    <div class="font-medium text-slate-800 text-sm">${r.tipo || 'Sem tipo'} | ${r.rede || '-'}</div>
+                    <div class="text-xs text-slate-500 mt-0.5">${r.data || ''} • ${r.cidade || ''}</div>
                 </div>
             `).join('');
-        }
-        
-        window.startTask = async (taskId) => {
-            try {
-                const taskRef = doc(db, 'tasks', taskId);
-                await updateDoc(taskRef, { activeUser: currentUser.displayName || currentUser.email.split('@')[0], activeStart: new Date() });
-                await showNotification('Tarefa iniciada!', 'success');
-            } catch (error) { await showNotification('Erro ao iniciar', 'error'); }
-        };
-        
-        window.completeTask = async (taskId) => {
-            try {
-                const taskRef = doc(db, 'tasks', taskId);
-                await updateDoc(taskRef, { completed: true, completedBy: currentUser.displayName || currentUser.email.split('@')[0], completedAt: new Date(), activeUser: null });
-                await showNotification('Tarefa Concluída! 🎉', 'success');
-            } catch (error) { await showNotification('Erro ao concluir', 'error'); }
-        };
-        
-        // Modal Visualização
-        window.openViewModal = async (taskId) => {
-            currentViewTaskId = taskId;
-            const taskDoc = await getDoc(doc(db, 'tasks', taskId));
-            if (!taskDoc.exists()) return;
-            const task = { id: taskDoc.id, ...taskDoc.data() };
-            
-            document.getElementById('viewTaskTitle').innerHTML = escapeHtml(task.title);
-            document.getElementById('viewTaskDesc').innerText = task.description || 'Sem descrição';
-            document.getElementById('viewPriority').innerText = task.priority || 'média';
-            document.getElementById('viewDate').innerText = task.date;
-            document.getElementById('viewCreatedBy').innerText = task.createdBy || 'Anônimo';
-            document.getElementById('viewAssignedTo').innerText = task.assignedTo || 'Ninguém';
-            
-            const completedSpan = document.getElementById('completedSpan');
-            if (task.completed) completedSpan.classList.remove('hidden');
-            else completedSpan.classList.add('hidden');
-            
-            document.getElementById('viewModal').classList.remove('hidden');
-            document.getElementById('viewModal').classList.add('flex');
-            
-            if (currentCommentsUnsubscribe) currentCommentsUnsubscribe();
-            const qComments = query(collection(db, 'tasks', taskId, 'comments'), orderBy('createdAt', 'asc'));
-            currentCommentsUnsubscribe = onSnapshot(qComments, (snapshot) => {
-                const comments = [];
-                snapshot.forEach(docC => comments.push({ id: docC.id, ...docC.data() }));
-                renderComments(comments);
+            document.querySelectorAll('#historyList [data-report]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const report = JSON.parse(el.getAttribute('data-report'));
+                    fillFormWithReport(report);
+                    showStatus('Dados carregados', 'green');
+                    closeModal();
+                });
             });
-        };
-        
-        function renderComments(comments) {
-            const container = document.getElementById('commentsList');
-            document.getElementById('commentsCount').innerText = comments.length;
-            if (comments.length === 0) { container.innerHTML = '<div class="text-center text-gray-400 dark:text-gray-500 text-sm py-4">Nenhum comentário ainda. Seja o primeiro!</div>'; return; }
-            container.innerHTML = comments.map(c => `
-                <div class="comment-bubble">
-                    <div class="flex justify-between items-start">
-                        <span class="font-semibold text-xs text-indigo-700 dark:text-indigo-400">${escapeHtml(c.userName)}</span>
-                        <span class="text-[10px] text-gray-400 dark:text-gray-500">${c.createdAt ? new Date(c.createdAt.toDate()).toLocaleString() : 'agora'}</span>
-                    </div>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 break-words">${escapeHtml(c.text)}</p>
-                </div>
-            `).join('');
         }
         
-        window.addCommentToCurrentTask = async () => {
-            if (!currentViewTaskId) return;
-            const input = document.getElementById('newCommentInput');
-            const text = input.value.trim();
-            if (!text) return;
-            try {
-                await addDoc(collection(db, 'tasks', currentViewTaskId, 'comments'), {
-                    text: text, userId: currentUser.uid, userName: currentUser.displayName || currentUser.email.split('@')[0],
-                    userPhoto: currentUser.photoURL || '', createdAt: new Date()
-                });
-                input.value = '';
-                await showNotification('Comentário adicionado!', 'success');
-            } catch (e) { await showNotification('Erro ao comentar', 'error'); }
-        };
-        
-        window.confirmDeleteTask = async () => {
-            const result = await Swal.fire({ title: 'Excluir tarefa?', text: 'Esta ação não pode ser desfeita!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Sim, excluir!', cancelButtonText: 'Cancelar' });
-            if (result.isConfirmed && currentViewTaskId) {
-                try {
-                    const commentsSnap = await getDocs(collection(db, 'tasks', currentViewTaskId, 'comments'));
-                    const batch = writeBatch(db);
-                    commentsSnap.forEach(docC => batch.delete(docC.ref));
-                    batch.delete(doc(db, 'tasks', currentViewTaskId));
-                    await batch.commit();
-                    await showNotification('Tarefa excluída!', 'success');
-                    closeModal('viewModal');
-                    loadTasks();
-                } catch(e) { await showNotification('Erro ao excluir', 'error'); }
+        function renderModalReportsList(reports) {
+            const modalList = document.getElementById('modalReportsList');
+            if (!reports.length) {
+                modalList.innerHTML = '<div class="text-center text-slate-400 py-4">Nenhum relatório disponível</div>';
+                return;
             }
-        };
-        
-        window.openEditFromView = () => {
-            if (!currentViewTaskId) return;
-            closeModal('viewModal');
-            currentEditTaskId = currentViewTaskId;
-            getDoc(doc(db, 'tasks', currentViewTaskId)).then(docSnap => {
-                if (docSnap.exists()) {
-                    const task = docSnap.data();
-                    document.getElementById('modalTitle').innerText = 'Editar Tarefa';
-                    document.getElementById('taskTitle').value = task.title || '';
-                    document.getElementById('taskDesc').value = task.description || '';
-                    document.getElementById('taskPriority').value = task.priority || 'media';
-                    document.getElementById('inviteEmail').value = task.assignedTo || '';
-                    document.getElementById('saveTaskBtn').innerHTML = '<i class="fas fa-pen"></i> Atualizar Tarefa';
-                    document.getElementById('taskModal').classList.remove('hidden');
-                    document.getElementById('taskModal').classList.add('flex');
-                }
+            modalList.innerHTML = reports.map(r => `
+                <div class="border border-slate-200 rounded-md p-3 cursor-pointer hover:bg-slate-50 transition flex justify-between items-center" data-modal-report='${JSON.stringify(r)}'>
+                    <div>
+                        <p class="font-medium text-slate-800 text-sm">${r.tipo || 'Relatório'} - ${r.rede || ''}</p>
+                        <p class="text-xs text-slate-500">${r.cidade || ''} • ${r.data || ''}</p>
+                    </div>
+                    <span class="text-slate-500 text-xs">Selecionar</span>
+                </div>
+            `).join('');
+            document.querySelectorAll('#modalReportsList [data-modal-report]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const report = JSON.parse(el.getAttribute('data-modal-report'));
+                    fillFormWithReport(report);
+                    closeModal();
+                    showStatus('Formulário preenchido automaticamente', 'green');
+                });
             });
-        };
-        
-        async function updateTask(taskId) {
-            const title = document.getElementById('taskTitle').value.trim();
-            if (!title) { await showNotification('Título obrigatório!', 'error'); return; }
-            const priority = document.getElementById('taskPriority').value;
-            const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
-            const btn = document.getElementById('saveTaskBtn');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-            btn.disabled = true;
-            try {
-                const taskRef = doc(db, 'tasks', taskId);
-                await updateDoc(taskRef, {
-                    title: title, description: document.getElementById('taskDesc').value.trim(),
-                    priority: priority, priorityValue: priorityValue, assignedTo: document.getElementById('inviteEmail').value.trim() || null
-                });
-                await showNotification('Tarefa atualizada!', 'success');
-                closeModal('taskModal');
-                resetModalToCreate();
-                loadTasks();
-                currentEditTaskId = null;
-            } catch(e) { await showNotification('Erro ao atualizar', 'error'); }
-            finally { btn.innerHTML = '<i class="fas fa-check"></i> Salvar Tarefa'; btn.disabled = false; }
         }
         
-        function resetModalToCreate() {
-            document.getElementById('modalTitle').innerText = 'Criar Nova Tarefa';
-            document.getElementById('taskTitle').value = '';
-            document.getElementById('taskDesc').value = '';
-            document.getElementById('taskPriority').value = 'media';
-            document.getElementById('inviteEmail').value = '';
-            document.getElementById('saveTaskBtn').innerHTML = '<i class="fas fa-check"></i> Salvar Tarefa';
-            currentEditTaskId = null;
-        }
-        
-        window.handleSaveTask = () => {
-            if (currentEditTaskId) updateTask(currentEditTaskId);
-            else createTask();
-        };
-        
-        async function createTask() {
-            const title = document.getElementById('taskTitle').value.trim();
-            if (!title) { await showNotification('O título é obrigatório!', 'error'); return; }
-            const priority = document.getElementById('taskPriority').value;
-            const priorityValue = { alta: 3, media: 2, baixa: 1 }[priority];
-            const btn = document.getElementById('saveTaskBtn');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
-            btn.disabled = true;
-            try {
-                await addDoc(collection(db, 'tasks'), {
-                    title: title, description: document.getElementById('taskDesc').value.trim(),
-                    priority: priority, priorityValue: priorityValue, date: currentDate,
-                    createdBy: currentUser.displayName || currentUser.email.split('@')[0],
-                    createdByUid: currentUser.uid, createdAt: new Date(),
-                    completed: false, assignedTo: document.getElementById('inviteEmail').value.trim() || null, activeUser: null
-                });
-                await showNotification('Tarefa criada com sucesso!', 'success');
-                closeModal('taskModal');
-                resetModalToCreate();
-                loadTasks();
-            } catch (error) { await showNotification('Erro ao salvar.', 'error'); }
-            finally { btn.innerHTML = '<i class="fas fa-check"></i> Salvar Tarefa'; btn.disabled = false; }
-        }
-        
-        // Upload de Arquivos
-        window.uploadFiles = async (input) => {
-            const files = Array.from(input.files);
-            if (files.length === 0) return;
-            await showNotification('Fazendo upload...', 'success');
-            for (const file of files) {
-                try {
-                    const storageRef = ref(storage, `files/${currentDate}/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    const url = await getDownloadURL(storageRef);
-                    await addDoc(collection(db, 'files'), {
-                        name: file.name, url: url, size: file.size, type: file.type,
-                        uploadedBy: currentUser.displayName || currentUser.email.split('@')[0],
-                        uploadedAt: new Date(), date: currentDate
-                    });
-                } catch (error) { await showNotification(`Erro no arquivo ${file.name}`, 'error'); }
-            }
-            await showNotification('Upload concluído!', 'success');
-            loadFiles();
-            input.value = '';
-        };
-        
-        async function loadFiles() {
-            try {
-                const q = query(collection(db, 'files'), orderBy('uploadedAt', 'desc'), limit(20));
-                const querySnapshot = await getDocs(q);
-                const files = [];
-                querySnapshot.forEach(doc => { files.push({ id: doc.id, ...doc.data() }); });
-                displayFiles(files);
-            } catch(error) { console.error(error); }
-        }
-        
-        function displayFiles(files) {
-            const container = document.getElementById('filesList');
-            if (files.length === 0) { container.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-6 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">Nenhum arquivo no cofre ainda.</div>'; return; }
-            container.innerHTML = files.map(file => `
-                <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl p-3 flex justify-between items-center transition">
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <div class="w-12 h-12 bg-white dark:bg-gray-600 rounded-lg shadow-sm flex items-center justify-center shrink-0 border border-gray-100 dark:border-gray-500">
-                            <i class="fas ${getFileIcon(file.type)} text-xl"></i>
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-sm font-bold text-gray-800 dark:text-gray-200 truncate block">${escapeHtml(file.name)}</span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${formatFileSize(file.size)} • ${escapeHtml(file.uploadedBy)}</span>
-                        </div>
-                    </div>
-                    <a href="${file.url}" target="_blank" download class="w-10 h-10 rounded-full bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 hover:bg-blue-50 dark:hover:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 transition shrink-0 ml-2 shadow-sm">
-                        <i class="fas fa-download"></i>
-                    </a>
-                </div>
-            `).join('');
-        }
-        
-        function displayActiveUsers(users) {
-            const container = document.getElementById('activeUsersList');
-            if (users.length === 0) { container.innerHTML = '<div class="w-full text-center text-gray-500 dark:text-gray-400 py-4 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">Só você está online.</div>'; return; }
-            container.innerHTML = users.map(user => `<span class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm"><i class="fas fa-circle text-[8px] text-green-500 animate-pulse"></i> ${escapeHtml(user.name || user.email.split('@')[0])}</span>`).join('');
-        }
-        
-        function displayAllUsers(users) {
-            const container = document.getElementById('allUsersList');
-            container.innerHTML = users.map(user => `
-                <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:border-indigo-100 dark:hover:border-indigo-800 rounded-lg p-3 transition">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <img src="${user.photoURL || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 shrink-0" onerror="this.style.display='none'">
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-sm font-bold text-gray-800 dark:text-gray-200 truncate">${escapeHtml(user.name || user.email)}</span>
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 truncate">${escapeHtml(user.email)}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0 ml-2">
-                        <span class="text-[10px] text-gray-600 dark:text-gray-400 font-bold uppercase tracking-wider hidden sm:block">Acesso</span>
-                        <div class="relative inline-block w-10 mr-1 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" onchange="toggleUserAccess('${user.id}', this.checked)" id="toggle-${user.id}" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white dark:bg-gray-600 border-4 appearance-none cursor-pointer" ${user.globalAccess ? 'checked' : ''}/>
-                            <label for="toggle-${user.id}" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer transition-colors duration-200"></label>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        window.toggleUserAccess = async (userId, isChecked) => {
-            try {
-                await updateDoc(doc(db, 'users', userId), { globalAccess: isChecked });
-                await showNotification(isChecked ? 'Acesso total concedido!' : 'Acesso total removido.', 'success');
-            } catch(error) { await showNotification('Erro ao alterar acesso.', 'error'); }
-        };
-        
-        window.signInWithGoogle = async () => {
-            const provider = new GoogleAuthProvider();
-            try { await signInWithPopup(auth, provider); } 
-            catch (error) { if (error.code === 'auth/popup-blocked') await signInWithRedirect(auth, provider); else await showNotification('Erro no login.', 'error'); }
-        };
-        
-        window.logout = () => { signOut(auth); };
-        
-        window.changeDate = (delta) => {
-            const [year, month, day] = currentDate.split('-');
-            const date = new Date(year, month - 1, day);
-            date.setDate(date.getDate() + delta);
-            currentDate = getLocalISODate(date);
-            document.getElementById('datePicker').value = currentDate;
-            loadTasks();
-        };
-        
-        window.showAddTaskModal = () => {
-            resetModalToCreate();
-            document.getElementById('taskModal').classList.remove('hidden');
-            document.getElementById('taskModal').classList.add('flex');
-            setTimeout(() => document.getElementById('taskTitle').focus(), 100);
-        };
-        
-        window.closeModal = (modalId) => {
-            document.getElementById(modalId).classList.add('hidden');
-            document.getElementById(modalId).classList.remove('flex');
-            if (modalId === 'viewModal' && currentCommentsUnsubscribe) {
-                currentCommentsUnsubscribe();
-                currentCommentsUnsubscribe = null;
-                currentViewTaskId = null;
-            }
-        };
-        
-        function getPriorityColor(p) { return { alta: 'border-red-500', media: 'border-yellow-400', baixa: 'border-green-500' }[p] || 'border-gray-500'; }
-        function getPriorityBadge(p) { return { alta: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300', media: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300', baixa: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' }[p] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'; }
-        function getFileIcon(t) { if (!t) return 'fa-file text-gray-400'; if (t.includes('pdf')) return 'fa-file-pdf text-red-500'; if (t.includes('image')) return 'fa-image text-blue-500'; if (t.includes('excel')) return 'fa-file-excel text-green-600'; if (t.includes('word')) return 'fa-file-word text-blue-700'; return 'fa-file-alt text-gray-500'; }
-        function formatFileSize(b) { if (b === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
-        
-        // Auth Listener
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loadingScreen').classList.add('hidden');
-                document.getElementById('loginContainer').classList.add('hidden');
-                document.getElementById('appContainer').classList.remove('hidden');
-                document.getElementById('appContainer').classList.add('flex');
-                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
-                if (user.photoURL) {
-                    document.getElementById('userAvatar').src = user.photoURL;
-                    document.getElementById('userAvatar').classList.remove('hidden');
-                    document.getElementById('userIconFallback').classList.add('hidden');
+        function fillFormWithReport(report) {
+            for (const key of Object.keys(inputs)) {
+                if (report[key] !== undefined && report[key] !== null) {
+                    inputs[key].value = report[key];
+                } else {
+                    inputs[key].value = "";
                 }
-                await initializeUser();
-                loadTasks();
-                loadFiles();
-                setupRealtimeListeners();
-                setupActiveStatus();
-                
-                // Event listeners para filtros
-                document.getElementById('searchInput').addEventListener('input', filterTasks);
-                document.getElementById('filterPriority').addEventListener('change', filterTasks);
+            }
+            if (report.fotos && Array.isArray(report.fotos)) {
+                for (let i = 0; i < 6; i++) {
+                    photoUrls[i] = (i < report.fotos.length && report.fotos[i]) ? report.fotos[i] : null;
+                }
             } else {
-                document.getElementById('loadingScreen').classList.add('hidden');
-                document.getElementById('loginContainer').classList.remove('hidden');
-                document.getElementById('appContainer').classList.add('hidden');
-                document.getElementById('appContainer').classList.remove('flex');
+                photoUrls.fill(null);
             }
-        });
+            renderPhotoGrid();
+            if (!inputs.data.value) {
+                inputs.data.value = new Date().toISOString().slice(0,10);
+            }
+        }
         
-        document.getElementById('datePicker').value = currentDate;
-        document.getElementById('datePicker').addEventListener('change', (e) => { if(e.target.value) { currentDate = e.target.value; loadTasks(); } });
-        document.getElementById('taskModal').addEventListener('click', (e) => { if (e.target === document.getElementById('taskModal')) closeModal('taskModal'); });
-        document.getElementById('viewModal').addEventListener('click', (e) => { if (e.target === document.getElementById('viewModal')) closeModal('viewModal'); });
+        function shareWhatsApp() {
+            const fields = {};
+            for (const [key, el] of Object.entries(inputs)) {
+                fields[key] = el.value.trim() || "—";
+            }
+            let message = `*RELATÓRIO DE CAMPO*\n\n`;
+            message += `Tipo: ${fields.tipo}\n`;
+            message += `Rede: ${fields.rede}\n`;
+            message += `ID: ${fields.id}\n`;
+            message += `Filial: ${fields.filial}\n`;
+            message += `Cidade: ${fields.cidade}\n`;
+            message += `Produto: ${fields.produto}\n`;
+            message += `Coordenador: ${fields.coordenador}\n`;
+            message += `Consultor(a): ${fields.consultor}\n`;
+            message += `Regional: ${fields.regional}\n`;
+            message += `Data: ${fields.data}\n`;
+            message += `\nRelatório gerado via Field Report System`;
+            
+            const encodedMsg = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/?text=${encodedMsg}`;
+            window.open(whatsappUrl, '_blank');
+            
+            if (photoUrls.some(url => url !== null)) {
+                setTimeout(() => {
+                    alert("As fotos devem ser enviadas separadamente no WhatsApp. As imagens estão disponíveis nos quadros acima.");
+                }, 500);
+            } else {
+                showStatus('Mensagem enviada para o WhatsApp', 'blue');
+            }
+        }
+        
+        function showStatus(msg, type = 'green') {
+            const statusDiv = document.getElementById('statusMsg');
+            const color = type === 'green' ? 'text-emerald-600' : (type === 'red' ? 'text-red-600' : 'text-slate-500');
+            statusDiv.innerHTML = `<span class="${color} text-sm">${msg}</span>`;
+            setTimeout(() => { if(statusDiv) statusDiv.innerHTML = ''; }, 3000);
+        }
+        
+        // Modal Controls
+        const modal = document.getElementById('autoModal');
+        const openModalBtn = document.getElementById('openModalBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        
+        function openModal() {
+            modal.classList.remove('invisible', 'opacity-0');
+            modal.classList.add('visible', 'opacity-100');
+            loadModalReports();
+        }
+        
+        function closeModal() {
+            modal.classList.add('invisible', 'opacity-0');
+            modal.classList.remove('visible', 'opacity-100');
+        }
+        
+        function loadModalReports() {
+            if (isFirebaseReal && db) {
+                get(child(ref(db), "relatorios")).then(snapshot => {
+                    const data = snapshot.val();
+                    let list = [];
+                    if(data) {
+                        list = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+                        list.sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+                    }
+                    renderModalReportsList(list);
+                }).catch(() => renderModalReportsList([]));
+            } else {
+                const local = JSON.parse(localStorage.getItem("field_reports") || "[]");
+                local.sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
+                renderModalReportsList(local);
+            }
+        }
+        
+        function clearForm() {
+            for (let key of Object.keys(inputs)) {
+                inputs[key].value = '';
+            }
+            inputs.coordenador.value = "Anderson Duarte";
+            inputs.data.value = new Date().toISOString().slice(0,10);
+            photoUrls.fill(null);
+            renderPhotoGrid();
+            showStatus('Formulário limpo', 'blue');
+        }
+        
+        // Event Listeners
+        document.getElementById('saveReportBtn').addEventListener('click', saveReport);
+        document.getElementById('shareWhatsBtn').addEventListener('click', shareWhatsApp);
+        document.getElementById('clearFormBtn').addEventListener('click', clearForm);
+        openModalBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+        
+        // Initialize
+        renderPhotoGrid();
+        loadReportsHistory();
+        if (!inputs.data.value) inputs.data.value = new Date().toISOString().slice(0,10);
     </script>
 </body>
 </html>
